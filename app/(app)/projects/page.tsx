@@ -1,0 +1,161 @@
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
+import { getCurrentUser } from "@/lib/supabase/session"
+import { CreateProjectDialog } from "@/components/projects/create-project-dialog"
+import { fetchMessageCounts } from "@/lib/messages"
+import { ProjectCard } from "@/components/projects/project-card"
+import { Card, CardContent } from "@/components/ui/card"
+import { FolderKanban, LoaderPinwheel, MessageSquareText, Users } from "lucide-react"
+import { PROJECT_STATUS_META, formatDate, type ProjectStatus } from "@/lib/portal-types"
+
+export const dynamic = "force-dynamic"
+
+export default async function ProjectsPage() {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) redirect("/login")
+
+  const isWorker = user.role === "worker"
+  const isAdmin = user.role === "team"
+
+  // Resolve the current worker's team member row (for assignment filtering).
+  const { data: myMember } = isWorker
+    ? await supabase
+        .from("team_members")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle()
+    : { data: null }
+
+  let projectQuery = supabase
+    .from("projects")
+    .select("*, clients(name, company)")
+    .order("created_at", { ascending: false })
+
+  if (isWorker && myMember) {
+    projectQuery = supabase
+      .from("projects")
+      .select(
+        "*, clients(name, company), project_assignments!inner(team_member_id)"
+      )
+      .eq("project_assignments.team_member_id", myMember.id)
+      .order("created_at", { ascending: false })
+  }
+
+  const { data: projects } = await projectQuery
+
+  const projectIds = (projects ?? []).map((p) => p.id)
+  const [{ data: assignments }, messageCounts] = await Promise.all([
+    isAdmin
+      ? supabase
+          .from("project_assignments")
+          .select("project_id, team_members(name, role)")
+      : { data: [] },
+    fetchMessageCounts(supabase, projectIds),
+  ])
+
+  const assignmentCounts = new Map<string, number>()
+  for (const a of assignments ?? []) {
+    assignmentCounts.set(a.project_id, (assignmentCounts.get(a.project_id) ?? 0) + 1)
+  }
+
+  const stats = [
+    {
+      label: isWorker ? "Assigned projects" : "Total projects",
+      value: projects?.length ?? 0,
+      icon: FolderKanban,
+    },
+    {
+      label: "In progress",
+      value:
+        projects?.filter((p) => p.status === "in_progress").length ?? 0,
+      icon: LoaderPinwheel,
+    },
+    {
+      label: "Completed",
+      value: projects?.filter((p) => p.status === "completed").length ?? 0,
+      icon: Users,
+    },
+    {
+      label: "Messages",
+      value: messageCounts.size
+        ? Array.from(messageCounts.values()).reduce((a, b) => a + b, 0)
+        : 0,
+      icon: MessageSquareText,
+    },
+  ]
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-balance text-2xl font-semibold tracking-tight">
+            {isWorker ? "My Projects" : "Projects"}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {isWorker
+              ? "Projects assigned to you — update their status as you work."
+              : "Every engagement, its team and progress in one place."}
+          </p>
+        </div>
+        {isAdmin && (
+          <CreateProjectDialog
+            clients={
+              ((await supabase.from("clients").select("id, name, company"))
+                .data ?? []) as { id: string; name: string; company: string | null }[]
+            }
+          />
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <Card key={stat.label}>
+            <CardContent className="flex items-center gap-3 p-4">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-foreground/5 text-foreground">
+                <stat.icon className="size-5" />
+              </span>
+              <div className="flex flex-col">
+                <span className="text-2xl font-semibold tracking-tight">
+                  {stat.value}
+                </span>
+                <span className="text-xs text-muted-foreground">{stat.label}</span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {!projects?.length ? (
+        <Card>
+          <CardContent className="p-10 text-center text-sm text-muted-foreground">
+            {isWorker
+              ? "You haven't been assigned to any projects yet."
+              : "No projects yet — create your first one."}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {projects.map((project) => {
+            const meta =
+              PROJECT_STATUS_META[project.status as ProjectStatus]
+            return (
+              <ProjectCard
+                key={project.id}
+                id={project.id}
+                name={project.name}
+                client={project.clients?.company ?? project.clients?.name ?? "Client"}
+                statusLabel={meta.label}
+                statusBadge={meta.badge}
+                progress={project.progress}
+                dueDate={formatDate(project.due_date)}
+                messages={messageCounts.get(project.id) ?? 0}
+                workers={assignmentCounts.get(project.id) ?? 0}
+              />
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
