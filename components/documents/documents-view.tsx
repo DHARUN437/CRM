@@ -38,6 +38,7 @@ export interface TeamDocument {
 
 interface DocumentsViewProps {
   documents: TeamDocument[]
+  allProjects?: { id: string; name: string }[]
 }
 
 function FileIcon({ type, className }: { type: string; className?: string }) {
@@ -50,20 +51,21 @@ function FileIcon({ type, className }: { type: string; className?: string }) {
   return <FileText className={className} />
 }
 
-export function DocumentsView({ documents }: DocumentsViewProps) {
+export function DocumentsView({ documents, allProjects = [] }: DocumentsViewProps) {
   const [query, setQuery] = useState("")
   const [projectFilter, setProjectFilter] = useState("all")
   const [busyId, setBusyId] = useState<string | null>(null)
   const [action, setAction] = useState<"open" | "download">("open")
 
+  const docProjectNames = documents
+    .map((d) => d.projects?.name)
+    .filter((n): n is string => Boolean(n))
+
+  const allProjectNames = allProjects.map((p) => p.name)
+
   const projectOptions = Array.from(
-    new Map(
-      documents
-        .map((d) => d.projects?.name)
-        .filter((n): n is string => Boolean(n))
-        .map((name) => [name, name])
-    ).values()
-  )
+    new Set([...docProjectNames, ...allProjectNames])
+  ).sort()
 
   const filtered = documents.filter((doc) => {
     if (projectFilter !== "all" && doc.projects?.name !== projectFilter) return false

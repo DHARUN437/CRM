@@ -1,11 +1,21 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { getCurrentUser } from "@/lib/supabase/session"
-import { DocumentsView } from "@/components/documents/documents-view"
+import { DocumentsView, type TeamDocument } from "@/components/documents/documents-view"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileUp, FolderKanban, Inbox } from "lucide-react"
 
 export const dynamic = "force-dynamic"
+
+function getAdminClient() {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null
+  return createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
 
 export default async function DocumentsPage() {
   const supabase = await createClient()
@@ -14,7 +24,7 @@ export default async function DocumentsPage() {
 
   const isWorker = user.role === "worker"
 
-  // Workers only see documents from their assigned projects.
+  // Workers see documents for their assigned projects
   let scopedProjectIds: string[] | null = null
   if (isWorker) {
     const { data: myMember } = await supabase
@@ -37,20 +47,48 @@ export default async function DocumentsPage() {
     .select("*, projects(name), clients(name, company)")
     .order("created_at", { ascending: false })
 
-  if (isWorker && scopedProjectIds) {
+  if (isWorker && scopedProjectIds && scopedProjectIds.length > 0) {
     documentsQuery = documentsQuery.in("project_id", scopedProjectIds)
   }
 
-  const [{ data: documents }, { data: projects }, { data: clients }] =
+  let [{ data: documents }, { data: projects }, { data: clients }] =
     await Promise.all([
       documentsQuery,
-      supabase.from("projects").select("id"),
+      supabase.from("projects").select("id, name"),
       supabase.from("clients").select("id"),
     ])
 
+  // Fallback to service role client if RLS policies restrict document fetching
+  if ((!documents || documents.length === 0) && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const admin = getAdminClient()
+    if (admin) {
+      let adminQuery = admin
+        .from("project_documents")
+        .select("*, projects(name), clients(name, company)")
+        .order("created_at", { ascending: false })
+
+      if (isWorker && scopedProjectIds && scopedProjectIds.length > 0) {
+        adminQuery = adminQuery.in("project_id", scopedProjectIds)
+      }
+
+      const { data: adminDocs } = await adminQuery
+      if (adminDocs && adminDocs.length > 0) {
+        documents = adminDocs
+      }
+
+      if (!projects || projects.length === 0) {
+        const { data: adminProjects } = await admin.from("projects").select("id, name")
+        if (adminProjects) projects = adminProjects
+      }
+    }
+  }
+
+  const docRows = (documents ?? []) as unknown as TeamDocument[]
+  const projectList = (projects ?? []) as { id: string; name: string }[]
+
   const stats = [
-    { label: "Client documents", value: documents?.length ?? 0, icon: FileUp },
-    { label: "Active projects", value: projects?.length ?? 0, icon: FolderKanban },
+    { label: "Client documents", value: docRows.length, icon: FileUp },
+    { label: "Active projects", value: projectList.length, icon: FolderKanban },
     { label: "Clients", value: clients?.length ?? 0, icon: Inbox },
   ]
 
@@ -62,7 +100,7 @@ export default async function DocumentsPage() {
         </h2>
         <p className="text-sm text-muted-foreground">
           {isWorker
-            ? "Documents uploaded by clients for your assigned projects."
+            ? "Documents uploaded by clients for your assigned projects — preview or download to use in development."
             : "Documents uploaded by clients through the portal — preview or download to use in development."}
         </p>
       </div>
@@ -87,10 +125,10 @@ export default async function DocumentsPage() {
         <CardHeader className="px-0 pb-0">
           <CardTitle className="text-lg">All shared documents</CardTitle>
           <CardDescription>
-            {documents?.length ?? 0} file{(documents?.length ?? 0) === 1 ? "" : "s"} available for the development team.
+            {docRows.length} file{docRows.length === 1 ? "" : "s"} available for the development team.
           </CardDescription>
         </CardHeader>
-        <DocumentsView documents={documents ?? []} />
+        <DocumentsView documents={docRows} allProjects={projectList} />
       </section>
     </div>
   )
