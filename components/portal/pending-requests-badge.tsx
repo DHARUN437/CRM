@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useEffect, useState } from "react"
 
 interface PendingRequestsBadgeProps {
-  clientId: string
+  clientId: string | null
   initialCount: number
 }
 
@@ -19,53 +19,58 @@ export function PendingRequestsBadge({
   }, [initialCount])
 
   useEffect(() => {
+    if (!clientId) return
+
     const supabase = createClient()
+    let channel: ReturnType<typeof supabase.channel> | null = null
 
-    async function refresh() {
-      try {
-        const { data: projects } = await supabase
-          .from("projects")
-          .select("id")
-          .eq("client_id", clientId)
+    try {
+      const safeId = String(clientId).slice(0, 8) || "default"
+      channel = supabase
+        .channel(`badge-${safeId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "document_requests",
+          },
+          async () => {
+            try {
+              const { data: projects } = await supabase
+                .from("projects")
+                .select("id")
+                .eq("client_id", clientId)
 
-        if (!projects || projects.length === 0) {
-          setCount(0)
-          return
-        }
+              if (!projects || projects.length === 0) return
+              const projectIds = projects.map((p) => p.id)
 
-        const projectIds = projects.map((p) => p.id)
-        const { count: pending } = await supabase
-          .from("document_requests")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "pending")
-          .in("project_id", projectIds)
+              const { count: pending } = await supabase
+                .from("document_requests")
+                .select("id", { count: "exact", head: true })
+                .eq("status", "pending")
+                .in("project_id", projectIds)
 
-        setCount(pending ?? 0)
-      } catch (err) {
-        console.error("Error refreshing pending requests count:", err)
-      }
+              if (typeof pending === "number") {
+                setCount(pending)
+              }
+            } catch {
+              // Ignore background errors safely
+            }
+          }
+        )
+
+      channel.subscribe()
+    } catch (e) {
+      console.warn("Realtime badge subscription notice:", e)
     }
 
-    // Build realtime channel chain cleanly before calling subscribe()
-    const channelName = `pending-req-${clientId.slice(0, 8)}`
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "document_requests",
-        },
-        () => {
-          void refresh()
-        }
-      )
-
-    channel.subscribe()
-
     return () => {
-      supabase.removeChannel(channel)
+      if (channel) {
+        try {
+          supabase.removeChannel(channel)
+        } catch {}
+      }
     }
   }, [clientId])
 
