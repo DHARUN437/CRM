@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { updateSession } from "@/lib/supabase/middleware"
+import { CORS_HEADERS, handleCors } from "@/lib/cors"
 
 const APP_PREFIXES = [
   "/dashboard",
@@ -13,7 +14,18 @@ const APP_PREFIXES = [
 const PORTAL_PREFIXES = ["/portal"]
 
 export async function proxy(request: NextRequest) {
+  // Handle preflight CORS requests immediately
+  if (request.method === "OPTIONS") {
+    return handleCors(request)
+  }
+
   const { supabaseResponse, user } = await updateSession(request)
+
+  // Attach CORS headers to response
+  Object.entries(CORS_HEADERS).forEach(([key, value]) => {
+    supabaseResponse.headers.set(key, value)
+  })
+
   const { pathname } = request.nextUrl
   const role = user?.app_metadata?.role as string | undefined
 
