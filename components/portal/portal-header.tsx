@@ -32,6 +32,7 @@ export function PortalHeader({ clientId, pendingRequestCount }: PortalHeaderProp
   const [menuOpen, setMenuOpen] = useState(false)
 
   async function signOut() {
+    setMenuOpen(false)
     const { createClient } = await import("@/lib/supabase/client")
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -39,8 +40,13 @@ export function PortalHeader({ clientId, pendingRequestCount }: PortalHeaderProp
     router.refresh()
   }
 
+  function handleNavigate(href: string) {
+    setMenuOpen(false)
+    router.push(href)
+  }
+
   return (
-    <header className="sticky top-0 z-40 border-b border-foreground/10 bg-background/80 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-foreground/10 bg-background/90 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <div className="flex items-center gap-6">
           <Link href="/portal" className="flex items-center gap-2.5">
@@ -63,7 +69,7 @@ export function PortalHeader({ clientId, pendingRequestCount }: PortalHeaderProp
                 href={link.href}
                 className={cn(
                   "flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground",
-                  isActive(pathname, link.href) && "bg-foreground/5 text-foreground"
+                  isActive(pathname, link.href) && "bg-foreground/5 text-foreground font-medium"
                 )}
               >
                 <link.icon className="size-4" />
@@ -96,43 +102,51 @@ export function PortalHeader({ clientId, pendingRequestCount }: PortalHeaderProp
             aria-label={menuOpen ? "Close navigation" : "Open navigation"}
             onClick={() => setMenuOpen((o) => !o)}
           >
-            {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+            {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </Button>
         </div>
       </div>
 
       {menuOpen && (
-        <div className="border-t border-foreground/10 sm:hidden">
-          <nav className="mx-auto max-w-6xl px-4 py-2">
-            {links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMenuOpen(false)}
-                className={cn(
-                  "flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground",
-                  isActive(pathname, link.href) && "bg-foreground/5 text-foreground"
-                )}
+        <div className="fixed inset-x-0 top-14 z-50 border-b border-foreground/10 bg-background/95 p-4 shadow-2xl backdrop-blur-xl sm:hidden animate-in fade-in-0 slide-in-from-top-2">
+          <nav className="flex flex-col gap-1">
+            {links.map((link) => {
+              const active = isActive(pathname, link.href)
+              return (
+                <button
+                  key={link.href}
+                  type="button"
+                  onClick={() => handleNavigate(link.href)}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors touch-target",
+                    active
+                      ? "bg-primary/10 text-primary font-semibold"
+                      : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <link.icon className="size-5 shrink-0" />
+                    <span>{link.label}</span>
+                  </div>
+                  {link.href === "/portal/requests" && clientId && (
+                    <PendingRequestsBadge
+                      clientId={clientId}
+                      initialCount={pendingRequestCount}
+                    />
+                  )}
+                </button>
+              )
+            })}
+            <div className="mt-2 border-t border-foreground/10 pt-2">
+              <button
+                type="button"
+                onClick={signOut}
+                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-destructive hover:bg-destructive/10 touch-target"
               >
-                <link.icon className="size-4" />
-                {link.label}
-                {link.href === "/portal/requests" && clientId && (
-                  <PendingRequestsBadge
-                    clientId={clientId}
-                    initialCount={pendingRequestCount}
-                  />
-                )}
-              </Link>
-            ))}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={signOut}
-              className="mt-1 flex w-full items-center justify-start gap-2"
-            >
-              <LogOut className="size-4" />
-              Sign out
-            </Button>
+                <LogOut className="size-5 shrink-0" />
+                <span>Sign out</span>
+              </button>
+            </div>
           </nav>
         </div>
       )}
