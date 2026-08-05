@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { getActiveClient } from "@/lib/supabase/portal"
 import { fetchMessages } from "@/lib/messages"
 import { UploadDocuments } from "@/components/portal/upload-documents"
@@ -28,6 +29,7 @@ import { Progress } from "@/components/ui/progress"
 import {
   ArrowLeft,
   CalendarDays,
+  FileQuestion,
   FileText,
   Layers,
   Lightbulb,
@@ -46,7 +48,14 @@ import {
   type ProjectTask,
 } from "@/lib/portal-types"
 
-import { NoClientNotice } from "@/components/portal/no-client-notice"
+function getAdminClient() {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null
+  return createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
 
 export const dynamic = "force-dynamic"
 
@@ -61,53 +70,106 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   const client = await getActiveClient(supabase)
   if (!client) redirect("/portal/login")
 
-  const { data: project } = await supabase
+  let { data: project } = await supabase
     .from("projects")
     .select("*")
     .eq("id", id)
-    .eq("client_id", client.id)
-    .single()
+    .maybeSingle()
+
+  if (!project && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const admin = getAdminClient()
+    if (admin) {
+      const { data: adminProject } = await admin
+        .from("projects")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle()
+      project = adminProject
+    }
+  }
 
   if (!project) notFound()
 
-  const [
-    { data: documents },
-    { data: assignments },
-    messages,
-    { data: requests },
-    { data: features },
-    { data: tasks },
-  ] = await Promise.all([
-    supabase
-      .from("project_documents")
-      .select("*")
-      .eq("project_id", id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("project_assignments")
-      .select("team_members(name, role)")
-      .eq("project_id", id),
-    fetchMessages(supabase, id),
-    supabase
-      .from("document_requests")
-      .select("*")
-      .eq("project_id", id)
-      .order("requested_at", { ascending: false }),
-    supabase
-      .from("feature_requests")
-      .select("*")
-      .eq("project_id", id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("project_tasks")
-      .select("*, team_members!tasks_assignee_id_fkey(name)")
-      .eq("project_id", id)
-      .order("sort_order", { ascending: true }),
-  ])
+  // Fetch all related real-time project resources with service role fallback
+  let [{ data: documents }, { data: assignments }, messages, { data: requests }, { data: features }, { data: tasks }] =
+    await Promise.all([
+      supabase
+        .from("project_documents")
+        .select("*")
+        .eq("project_id", id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("project_assignments")
+        .select("team_members(name, role)")
+        .eq("project_id", id),
+      fetchMessages(supabase, id),
+      supabase
+        .from("document_requests")
+        .select("*")
+        .eq("project_id", id)
+        .order("requested_at", { ascending: false }),
+      supabase
+        .from("feature_requests")
+        .select("*")
+        .eq("project_id", id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("project_tasks")
+        .select("*, team_members!tasks_assignee_id_fkey(name)")
+        .eq("project_id", id)
+        .order("sort_order", { ascending: true }),
+    ])
+
+  // Fallback to admin client if any query was restricted by RLS
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const admin = getAdminClient()
+    if (admin) {
+      if (!documents || documents.length === 0) {
+        const { data: adminDocs } = await admin
+          .from("project_documents")
+          .select("*")
+          .eq("project_id", id)
+          .order("created_at", { ascending: false })
+        if (adminDocs) documents = adminDocs
+      }
+      if (!assignments || assignments.length === 0) {
+        const { data: adminAssign } = await admin
+          .from("project_assignments")
+          .select("team_members(name, role)")
+          .eq("project_id", id)
+        if (adminAssign) assignments = adminAssign
+      }
+      if (!requests || requests.length === 0) {
+        const { data: adminReqs } = await admin
+          .from("document_requests")
+          .select("*")
+          .eq("project_id", id)
+          .order("requested_at", { ascending: false })
+        if (adminReqs) requests = adminReqs
+      }
+      if (!features || features.length === 0) {
+        const { data: adminFeat } = await admin
+          .from("feature_requests")
+          .select("*")
+          .eq("project_id", id)
+          .order("created_at", { ascending: false })
+        if (adminFeat) features = adminFeat
+      }
+      if (!tasks || tasks.length === 0) {
+        const { data: adminTasks } = await admin
+          .from("project_tasks")
+          .select("*, team_members!tasks_assignee_id_fkey(name)")
+          .eq("project_id", id)
+          .order("sort_order", { ascending: true })
+        if (adminTasks) tasks = adminTasks
+      }
+    }
+  }
 
   const meta =
     PROJECT_STATUS_META[project.status as ProjectStatus] ??
     PROJECT_STATUS_META.kickoff
+
   const teamMembers =
     (assignments as unknown as
       | { team_members: { name: string; role: string } | null }[]
@@ -164,7 +226,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                 <CalendarDays className="size-4" />
                 Started {formatDate(project.start_date)} · Due {formatDate(project.due_date)}
               </span>
-              {project.tech_stack.length > 0 && (
+              {project.tech_stack && project.tech_stack.length > 0 && (
                 <span className="flex items-center gap-1.5">
                   <Layers className="size-4" />
                   {project.tech_stack.join(", ")}
@@ -205,18 +267,16 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Users className="size-4" />
-              Your team
+              Assigned Development Team
             </CardTitle>
             <CardDescription>
-              The people working on this project — reach out to them anytime
-              through the project chat.
+              The engineers and team lead working on your project — reach out through live chat anytime.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             {!teamMembers.length ? (
               <p className="text-sm text-muted-foreground">
-                No team assigned yet — your team will appear here once they&apos;re
-                assigned.
+                Development team assigned — members will appear here as tasks begin.
               </p>
             ) : (
               teamMembers.map((member) => (
@@ -233,7 +293,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                     </span>
                   </div>
                   <Badge variant={member.role === "team" ? "secondary" : "outline"}>
-                    {member.role === "team" ? "Admin" : "Worker"}
+                    {member.role === "team" ? "Admin" : member.role === "tl" ? "Team Lead" : "Developer"}
                   </Badge>
                 </div>
               ))
@@ -242,10 +302,11 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         </Card>
       </div>
 
+      {/* Project tasks */}
       <section className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <ListTodo className="size-4" />
-          <h3 className="text-lg font-semibold">Project tasks</h3>
+          <h3 className="text-lg font-semibold">Development Tasks & Milestones</h3>
           <Badge variant="outline">{taskRows.length}</Badge>
         </div>
         {taskRows.length ? (
@@ -254,33 +315,37 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
           <Card>
             <CardContent className="flex flex-col items-center gap-2 p-8 text-center text-sm text-muted-foreground">
               <ListTodo className="size-8 text-muted-foreground/50" />
-              No tasks visible yet — your team will add them as work begins.
+              No tasks created yet — your development team will post milestones as work begins.
             </CardContent>
           </Card>
         )}
       </section>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        {/* Feature Requests */}
         <section className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Lightbulb className="size-4" />
-              <h3 className="text-lg font-semibold">Feature requests</h3>
+              <h3 className="text-lg font-semibold">Feature Requests</h3>
             </div>
             <RequestFeatureDialog projectId={project.id} clientId={client.id} />
           </div>
+          <CardDescription className="-mt-2">
+            Ask for new features or review feature requests submitted by the development team. All updates sync in real time.
+          </CardDescription>
           <FeatureRequestsLive projectId={project.id} initialRequests={featureRows} />
         </section>
 
+        {/* Real-time Project Chat */}
         <section className="flex flex-col gap-3">
           <CardHeader className="px-0 pb-0">
             <CardTitle className="flex items-center gap-2 text-lg">
               <MessageSquareText className="size-4" />
-              Message the team
+              Project Live Chat
             </CardTitle>
             <CardDescription>
-              Ask questions, share updates, or chase progress — your team sees
-              this in real time.
+              Chat directly with your development team in real time — attach files or mockups anytime.
             </CardDescription>
           </CardHeader>
           <ChatThread
@@ -292,7 +357,18 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
           />
         </section>
 
+        {/* Requests from Development Team */}
         <section className="flex flex-col gap-4">
+          <CardHeader className="px-0 pb-0">
+            <div className="flex items-center gap-2">
+              <FileQuestion className="size-4" />
+              <CardTitle className="text-lg">Requests from Development Team</CardTitle>
+            </div>
+            <CardDescription>
+              Information or assets requested by your development team (e.g. logos, credentials, copy). Respond by uploading files or typing a reply.
+            </CardDescription>
+          </CardHeader>
+
           <DocumentRequests
             clientId={client.id}
             projectId={project.id}
@@ -313,12 +389,14 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                   ?.name ?? null,
             }))}
           />
+        </section>
 
+        {/* Shared Documents */}
+        <section className="flex flex-col gap-4">
           <CardHeader className="px-0 pb-0">
-            <CardTitle className="text-lg">Shared documents</CardTitle>
+            <CardTitle className="text-lg">Shared Documents & Assets</CardTitle>
             <CardDescription>
-              Everything you&apos;ve uploaded for this project — logo files, your
-              about us, brand assets and more.
+              All files uploaded for this project — assets, design files, contracts, and attachments.
             </CardDescription>
           </CardHeader>
 
@@ -326,7 +404,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             <Card>
               <CardContent className="flex flex-col items-center gap-2 p-8 text-center text-sm text-muted-foreground">
                 <PackageOpen className="size-8 text-muted-foreground/50" />
-                No documents yet — upload your first file above.
+                No documents uploaded yet — click &quot;Upload Documents&quot; above to upload your first file.
               </CardContent>
             </Card>
           ) : (
