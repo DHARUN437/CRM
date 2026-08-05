@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getActiveClient } from "@/lib/supabase/portal"
 import { fetchWeekMessageCount } from "@/lib/messages"
+import { NoClientNotice } from "@/components/portal/no-client-notice"
 import { ProjectCard } from "@/components/portal/project-card"
 import {
   Card,
@@ -18,7 +19,12 @@ export const dynamic = "force-dynamic"
 export default async function PortalOverviewPage() {
   const supabase = await createClient()
   const client = await getActiveClient(supabase)
-  if (!client) redirect("/portal/login")
+
+  if (!client) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect("/portal/login")
+    return <NoClientNotice email={user.email} />
+  }
 
   const [{ data: projects }, { data: documents }] = await Promise.all([
     supabase
@@ -45,10 +51,15 @@ export default async function PortalOverviewPage() {
 
   const teams = new Map<string, { name: string }[]>()
   for (const a of assignments ?? []) {
-    const member = a.team_members as unknown as { name: string } | null
-    if (!member) continue
+    const raw = (a as unknown as { project_id: string; team_members: { name: string } | { name: string }[] | null }).team_members
+    if (!raw) continue
+    const members = Array.isArray(raw) ? raw : [raw]
     const list = teams.get(a.project_id) ?? []
-    list.push(member)
+    for (const m of members) {
+      if (m && typeof m === "object" && "name" in m && m.name) {
+        list.push({ name: String(m.name) })
+      }
+    }
     teams.set(a.project_id, list)
   }
 

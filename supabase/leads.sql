@@ -37,20 +37,30 @@ create index if not exists idx_leads_owner on public.leads (owner_id);
 -- Seed sample leads (owner resolves to a real team member by name if present)
 -- ---------------------------------------------------------------------------
 insert into public.leads (company, contact, value, stage, score, source, owner_id, tags, updated_at)
-select *
+select
+  s.company,
+  s.contact,
+  s.value,
+  s.stage,
+  s.score,
+  s.source,
+  tm.id,
+  s.tags,
+  s.updated_at
 from (values
-  ('Lumen Health',       'Dr. Elena Ross',  84000,  'negotiation', 92, 'Referral',   'Marcus Webb',  array['Healthcare','Retainer'],        now() - interval '2 hours'),
-  ('Vertex Labs',        'Tom Bradley',     128000, 'proposal',    87, 'Inbound',    'Marcus Webb',  array['SaaS','Enterprise'],           now() - interval '5 hours'),
-  ('Aria Commerce',      'Nina Patel',      46000,  'qualified',   74, 'LinkedIn',   'Sofia Alvarez', array['E-commerce'],                 now() - interval '1 day'),
-  ('Northstar Capital',  'Greg Munoz',      210000, 'negotiation', 95, 'Event',      'Marcus Webb',  array['Fintech','Enterprise'],         now() - interval '3 hours'),
-  ('Pixel Forge',        'Amelia Cruz',     32000,  'new',         58, 'Website',    'Sofia Alvarez', array['Startup'],                    now() - interval '20 minutes'),
-  ('GreenLeaf',          'Owen Park',       54000,  'new',         61, 'Referral',   'Marcus Webb',  array['Sustainability'],               now() - interval '1 hour'),
-  ('Cobalt AI',          'Yuki Tanaka',     176000, 'qualified',   83, 'Inbound',    'Marcus Webb',  array['AI','Enterprise'],              now() - interval '8 hours'),
-  ('Harbor Point',       'Lena Fischer',    68000,  'proposal',    79, 'Referral',   'Sofia Alvarez', array['Hospitality'],                 now() - interval '1 day'),
-  ('Meridian Group',     'Carl Estevez',    92000,  'won',         100, 'Referral',  'Marcus Webb',  array['Retail','Retainer'],            now() - interval '2 days'),
-  ('Solace Media',       'Ruby Adeyemi',    38000,  'won',         100, 'Inbound',    'Sofia Alvarez', array['Media'],                      now() - interval '3 days'),
-  ('Bluewave',           'Ian McGregor',    71000,  'qualified',   70, 'Event',      'Marcus Webb',  array['Logistics'],                    now() - interval '6 hours'),
-  ('Zenith Studios',     'Farah Khan',      44000,  'proposal',    66, 'LinkedIn',   'Sofia Alvarez', array['Creative'],                    now() - interval '12 hours')
-) as seed(company, contact, value, stage, score, source, owner_name, tags, updated_at)
+  ('Lumen Health',       'Dr. Elena Ross',  84000,  'negotiation', 92, 'Referral',   'Evan Carter',     array['Healthcare','Retainer'],        now() - interval '2 hours'),
+  ('Vertex Labs',        'Tom Bradley',     128000, 'proposal',    87, 'Inbound',    'Evan Carter',     array['SaaS','Enterprise'],           now() - interval '5 hours'),
+  ('Aria Commerce',      'Nina Patel',      46000,  'qualified',   74, 'LinkedIn',   'Maya Rodriguez',  array['E-commerce'],                 now() - interval '1 day'),
+  ('Northstar Capital',  'Greg Munoz',      210000, 'negotiation', 95, 'Event',      'Evan Carter',     array['Fintech','Enterprise'],         now() - interval '3 hours'),
+  ('Pixel Forge',        'Amelia Cruz',     32000,  'new',         58, 'Website',    'Maya Rodriguez',  array['Startup'],                    now() - interval '20 minutes'),
+  ('GreenLeaf',          'Owen Park',       54000,  'new',         61, 'Referral',   'Evan Carter',     array['Sustainability'],               now() - interval '1 hour'),
+  ('Cobalt AI',          'Yuki Tanaka',     176000, 'qualified',   83, 'Inbound',    'Evan Carter',     array['AI','Enterprise'],              now() - interval '8 hours'),
+  ('Harbor Point',       'Lena Fischer',    68000,  'proposal',    79, 'Referral',   'Maya Rodriguez',  array['Hospitality'],                 now() - interval '1 day'),
+  ('Meridian Group',     'Carl Estevez',    92000,  'won',         100, 'Referral',  'Evan Carter',     array['Retail','Retainer'],            now() - interval '2 days'),
+  ('Solace Media',       'Ruby Adeyemi',    38000,  'won',         100, 'Inbound',    'Maya Rodriguez',  array['Media'],                      now() - interval '3 days'),
+  ('Bluewave',           'Ian McGregor',    71000,  'qualified',   70, 'Event',      'Evan Carter',     array['Logistics'],                    now() - interval '6 hours'),
+  ('Zenith Studios',     'Farah Khan',      44000,  'proposal',    66, 'LinkedIn',   'Maya Rodriguez',  array['Creative'],                    now() - interval '12 hours')
+) as s(company, contact, value, stage, score, source, owner_name, tags, updated_at)
+left join public.team_members tm on lower(tm.name) = lower(s.owner_name)
 where not exists (select 1 from public.leads limit 1)
 on conflict do nothing;

@@ -104,6 +104,7 @@ $$;
 -- The trigger function is security definer — it must not be callable directly.
 revoke execute on function public.handle_new_client_user() from public, anon, authenticated;
 
+drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_client_user();
@@ -117,35 +118,42 @@ alter table public.project_documents enable row level security;
 alter table public.document_requests enable row level security;
 
 -- Clients --------------------------------------------------------------
+drop policy if exists "clients_own_select" on public.clients;
 create policy "clients_own_select" on public.clients
   for select to authenticated
   using ( user_id = auth.uid() );
 
+drop policy if exists "clients_own_update" on public.clients;
 create policy "clients_own_update" on public.clients
   for update to authenticated
   using ( user_id = auth.uid() )
   with check ( user_id = auth.uid() );
 
+drop policy if exists "team_clients_all" on public.clients;
 create policy "team_clients_all" on public.clients
   for all to authenticated
   using ( public.is_team() )
   with check ( public.is_team() );
 
 -- Projects -------------------------------------------------------------
+drop policy if exists "clients_projects_select" on public.projects;
 create policy "clients_projects_select" on public.projects
   for select to authenticated
   using ( client_id in (select id from public.clients where user_id = auth.uid()) );
 
+drop policy if exists "team_projects_all" on public.projects;
 create policy "team_projects_all" on public.projects
   for all to authenticated
   using ( public.is_team() )
   with check ( public.is_team() );
 
 -- Project documents ----------------------------------------------------
+drop policy if exists "clients_docs_select" on public.project_documents;
 create policy "clients_docs_select" on public.project_documents
   for select to authenticated
   using ( client_id in (select id from public.clients where user_id = auth.uid()) );
 
+drop policy if exists "clients_docs_insert" on public.project_documents;
 create policy "clients_docs_insert" on public.project_documents
   for insert to authenticated
   with check (
@@ -153,12 +161,14 @@ create policy "clients_docs_insert" on public.project_documents
     and uploaded_by = auth.uid()
   );
 
+drop policy if exists "team_docs_all" on public.project_documents;
 create policy "team_docs_all" on public.project_documents
   for all to authenticated
   using ( public.is_team() )
   with check ( public.is_team() );
 
 -- Document requests ----------------------------------------------------
+drop policy if exists "clients_requests_select" on public.document_requests;
 create policy "clients_requests_select" on public.document_requests
   for select to authenticated
   using ( project_id in (
@@ -168,6 +178,7 @@ create policy "clients_requests_select" on public.document_requests
   ));
 
 -- Clients may only fulfill (mark done + link a document) their own requests
+drop policy if exists "clients_requests_update" on public.document_requests;
 create policy "clients_requests_update" on public.document_requests
   for update to authenticated
   using ( project_id in (
@@ -183,6 +194,7 @@ create policy "clients_requests_update" on public.document_requests
     )
   );
 
+drop policy if exists "team_requests_all" on public.document_requests;
 create policy "team_requests_all" on public.document_requests
   for all to authenticated
   using ( public.is_team() )
@@ -197,12 +209,14 @@ values ('client-documents', 'client-documents', false)
 on conflict (id) do nothing;
 
 -- Team: full access to the bucket
+drop policy if exists "team_bucket_all" on storage.objects;
 create policy "team_bucket_all" on storage.objects
   for all to authenticated
   using ( bucket_id = 'client-documents' and public.is_team() )
   with check ( bucket_id = 'client-documents' and public.is_team() );
 
 -- Clients: upload/read only inside their own {client_id}/ folder
+drop policy if exists "clients_bucket_insert" on storage.objects;
 create policy "clients_bucket_insert" on storage.objects
   for insert to authenticated
   with check (
@@ -212,6 +226,7 @@ create policy "clients_bucket_insert" on storage.objects
     )
   );
 
+drop policy if exists "clients_bucket_select" on storage.objects;
 create policy "clients_bucket_select" on storage.objects
   for select to authenticated
   using (

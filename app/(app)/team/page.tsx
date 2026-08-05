@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/supabase/session"
 import { AddWorkerDialog } from "@/components/team/add-worker-dialog"
+import { WorkerRowActions } from "@/components/team/worker-row-actions"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { FolderKanban, ShieldPlus } from "lucide-react"
@@ -14,7 +15,7 @@ export default async function TeamPage() {
   const user = await getCurrentUser()
 
   if (!user) redirect("/login")
-  if (user.role !== "team") redirect("/dashboard")
+  if (user.role !== "team" && user.role !== "tl") redirect("/dashboard")
 
   const { data: members } = await supabase
     .from("team_members")
@@ -34,6 +35,8 @@ export default async function TeamPage() {
         .in("team_member_id", workerIds)
     : { data: [] }
 
+  const isAdmin = user.role === "team"
+
   const counts = new Map<string, number>()
   for (const a of assignments ?? []) {
     counts.set(a.team_member_id, (counts.get(a.team_member_id) ?? 0) + 1)
@@ -47,10 +50,10 @@ export default async function TeamPage() {
             Team
           </h2>
           <p className="text-sm text-muted-foreground">
-            Workers get a login and will only see projects you assign them.
+            Workers and Team Leads get a login. Workers only see assigned projects; TLs can also assign teammates.
           </p>
         </div>
-        <AddWorkerDialog />
+        {isAdmin && <AddWorkerDialog />}
       </div>
 
       {!teamMembers.length ? (
@@ -93,9 +96,23 @@ export default async function TeamPage() {
                       {counts.get(member.id) ?? 0} project
                       {(counts.get(member.id) ?? 0) === 1 ? "" : "s"}
                     </span>
-                    <Badge variant={member.role === "team" ? "secondary" : "outline"}>
-                      {member.role === "team" ? "Admin" : "Worker"}
+                    <Badge
+                      variant={
+                        member.role === "team"
+                          ? "secondary"
+                          : member.role === "tl"
+                            ? "default"
+                            : "outline"
+                      }
+                      className={
+                        member.role === "tl"
+                          ? "bg-primary/15 text-primary border-primary/20"
+                          : undefined
+                      }
+                    >
+                      {member.role === "team" ? "Admin" : member.role === "tl" ? "Team Lead" : "Worker"}
                     </Badge>
+                    {isAdmin && member.role !== "team" && <WorkerRowActions member={member} />}
                   </div>
                 </div>
               ))}

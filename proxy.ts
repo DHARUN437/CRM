@@ -48,10 +48,10 @@ export async function proxy(request: NextRequest) {
     }
     if (user && isPortalLogin) {
       const url = request.nextUrl.clone()
-      url.pathname = role === "client" ? "/portal" : "/dashboard"
+      url.pathname = (role === "team" || role === "worker" || role === "tl") ? "/dashboard" : "/portal"
       return NextResponse.redirect(url)
     }
-    if (user && role !== "client") {
+    if (user && (role === "team" || role === "worker" || role === "tl")) {
       const url = request.nextUrl.clone()
       url.pathname = "/dashboard"
       return NextResponse.redirect(url)
@@ -61,7 +61,7 @@ export async function proxy(request: NextRequest) {
   // Already signed in — skip the login page.
   if (pathname === "/login" && user) {
     const url = request.nextUrl.clone()
-    url.pathname = role === "client" ? "/portal" : "/dashboard"
+    url.pathname = (role === "team" || role === "worker" || role === "tl") ? "/dashboard" : "/portal"
     return NextResponse.redirect(url)
   }
 

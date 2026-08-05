@@ -17,6 +17,7 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_client_user();
 
 -- 3. Allow clients to self-create their profile on first portal login ---------
+drop policy if exists "clients_self_insert" on public.clients;
 create policy "clients_self_insert" on public.clients
   for insert to authenticated
   with check ( user_id = auth.uid() );

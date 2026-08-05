@@ -14,13 +14,19 @@ import { Separator } from "@/components/ui/separator"
 import { FileText, PackageOpen } from "lucide-react"
 import { formatBytes } from "@/lib/portal-types"
 
+import { NoClientNotice } from "@/components/portal/no-client-notice"
+
 export const dynamic = "force-dynamic"
 
 export default async function PortalDocumentsPage() {
   const supabase = await createClient()
 
   const client = await getActiveClient(supabase)
-  if (!client) redirect("/portal/login")
+  if (!client) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect("/portal/login")
+    return <NoClientNotice email={user.email} />
+  }
 
   const { data: projects } = await supabase
     .from("projects")

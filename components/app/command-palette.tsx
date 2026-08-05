@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Plus,
   Receipt,
-  Sparkles,
   Users,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -21,7 +20,19 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command"
-import { leads, projects } from "@/lib/data"
+import { createClient } from "@/lib/supabase/client"
+import { useEffect, useState } from "react"
+
+interface PaletteProject {
+  id: string
+  name: string
+}
+
+interface PaletteLead {
+  id: string
+  company: string
+  contact: string
+}
 
 export function CommandPalette({
   open,
@@ -31,6 +42,36 @@ export function CommandPalette({
   onOpenChange: (open: boolean) => void
 }) {
   const router = useRouter()
+  const [projects, setProjects] = useState<PaletteProject[]>([])
+  const [leads, setLeads] = useState<PaletteLead[]>([])
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    const supabase = createClient()
+
+    void (async () => {
+      const [{ data: projectRows }, { data: leadRows }] = await Promise.all([
+        supabase
+          .from("projects")
+          .select("id, name")
+          .order("created_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("leads")
+          .select("id, company, contact")
+          .order("updated_at", { ascending: false })
+          .limit(10),
+      ])
+      if (cancelled) return
+      setProjects((projectRows ?? []) as PaletteProject[])
+      setLeads((leadRows ?? []) as PaletteLead[])
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [open])
 
   function go(href: string) {
     onOpenChange(false)
@@ -67,37 +108,41 @@ export function CommandPalette({
             <FolderKanban />
             Create new project
           </CommandItem>
-          <CommandItem onSelect={() => go("/dashboard")}>
+          <CommandItem onSelect={() => go("/invoices")}>
             <Receipt />
-            Generate invoice
-          </CommandItem>
-          <CommandItem onSelect={() => go("/dashboard")}>
-            <Sparkles />
-            Ask the AI assistant
+            Manage invoices
           </CommandItem>
         </CommandGroup>
-        <CommandSeparator />
-        <CommandGroup heading="Projects">
-          {projects.slice(0, 4).map((p) => (
-            <CommandItem key={p.id} onSelect={() => go("/projects")}>
-              <FolderKanban />
-              {p.name}
-              <ArrowUpRight className="ml-auto opacity-40" />
-            </CommandItem>
-          ))}
-        </CommandGroup>
-        <CommandSeparator />
-        <CommandGroup heading="Leads">
-          {leads.slice(0, 4).map((l) => (
-            <CommandItem key={l.id} onSelect={() => go("/crm")}>
-              <FileText />
-              {l.company}
-              <span className="ml-auto text-xs text-muted-foreground">
-                {l.contact}
-              </span>
-            </CommandItem>
-          ))}
-        </CommandGroup>
+        {projects.length > 0 && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading="Projects">
+              {projects.map((p) => (
+                <CommandItem key={p.id} onSelect={() => go(`/projects/${p.id}`)}>
+                  <FolderKanban />
+                  {p.name}
+                  <ArrowUpRight className="ml-auto opacity-40" />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </>
+        )}
+        {leads.length > 0 && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading="Leads">
+              {leads.map((l) => (
+                <CommandItem key={l.id} onSelect={() => go("/crm")}>
+                  <FileText />
+                  {l.company}
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {l.contact}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </>
+        )}
       </CommandList>
     </CommandDialog>
   )

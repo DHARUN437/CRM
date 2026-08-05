@@ -104,7 +104,7 @@ export function NewLeadDialog({ presetStage = "new", trigger }: NewLeadDialogPro
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="lead-value">Deal value ($)</Label>
+              <Label htmlFor="lead-value">Deal value (₹)</Label>
               <Input
                 id="lead-value"
                 type="number"

@@ -21,3 +21,6 @@ dev-server-err.log
 
 # TypeScript build cache
 tsconfig.tsbuildinfo
+
+# Archive files
+*.zip

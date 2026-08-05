@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "AgencyOS — The Operating System for Modern Agencies",
+  title: "JoyCRM — Corporate Solutions CRM & Client Portal",
   description:
-    "AgencyOS unifies project management, CRM, client portal, finance, and an AI assistant into one ultra-premium platform built for web, SaaS, and creative agencies.",
+    "JoyCRM unifies project management, CRM, client portal, finance, and team management for Joy Corporate Solutions.",
   generator: "v0.app",
   icons: {
     icon: [

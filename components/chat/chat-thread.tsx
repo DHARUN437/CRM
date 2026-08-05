@@ -1,6 +1,7 @@
 "use client"
 
 import { createClient } from "@/lib/supabase/client"
+import { optimizeFileForUpload, CDN_UPLOAD_OPTIONS } from "@/lib/media-optimization"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { useEffect, useRef, useState } from "react"
@@ -135,11 +136,15 @@ export function ChatThread({
     let attachmentSize: number | undefined
 
     if (pendingFile) {
-      const safeName = pendingFile.name.replace(/[^a-zA-Z0-9._-]/g, "-")
+      const { file: optimizedFile } = await optimizeFileForUpload(pendingFile)
+      const safeName = optimizedFile.name.replace(/[^a-zA-Z0-9._-]/g, "-")
       const path = `${projectId}/${crypto.randomUUID()}-${safeName}`
       const { error: uploadError } = await supabase.storage
         .from("chat-attachments")
-        .upload(path, pendingFile, { upsert: false })
+        .upload(path, optimizedFile, {
+          ...CDN_UPLOAD_OPTIONS,
+          contentType: optimizedFile.type || undefined,
+        })
 
       if (uploadError) {
         console.error("Failed to upload attachment:", uploadError.message)
@@ -148,9 +153,9 @@ export function ChatThread({
       }
 
       attachmentUrl = path
-      attachmentName = pendingFile.name
-      attachmentType = pendingFile.type
-      attachmentSize = pendingFile.size
+      attachmentName = optimizedFile.name
+      attachmentType = optimizedFile.type
+      attachmentSize = optimizedFile.size
     }
 
     const { data, error } = await supabase

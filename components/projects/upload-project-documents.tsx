@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
 import { Upload, Loader2 } from "lucide-react"
+import { optimizeFileForUpload, CDN_UPLOAD_OPTIONS } from "@/lib/media-optimization"
 
 interface UploadProjectDocumentsProps {
   clientId: string
@@ -30,13 +31,17 @@ export function UploadProjectDocuments({
       data: { user },
     } = await supabase.auth.getUser()
 
-    for (const file of Array.from(files)) {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-")
+    for (const rawFile of Array.from(files)) {
+      const { file: optimizedFile } = await optimizeFileForUpload(rawFile)
+      const safeName = optimizedFile.name.replace(/[^a-zA-Z0-9._-]/g, "-")
       const path = `${clientId}/${projectId}/${crypto.randomUUID()}-${safeName}`
 
       const { error: uploadError } = await supabase.storage
         .from("client-documents")
-        .upload(path, file, { upsert: false })
+        .upload(path, optimizedFile, {
+          ...CDN_UPLOAD_OPTIONS,
+          contentType: optimizedFile.type || undefined,
+        })
 
       if (uploadError) {
         setUploading(false)
@@ -49,10 +54,10 @@ export function UploadProjectDocuments({
         .insert({
           project_id: projectId,
           client_id: clientId,
-          name: file.name,
+          name: optimizedFile.name,
           file_path: path,
-          file_type: file.type || "application/octet-stream",
-          file_size: file.size,
+          file_type: optimizedFile.type || "application/octet-stream",
+          file_size: optimizedFile.size,
           uploaded_by: user?.id ?? null,
         })
 

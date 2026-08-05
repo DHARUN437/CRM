@@ -25,19 +25,29 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Loader2, Plus } from "lucide-react"
 
-interface CreateProjectDialogProps {
-  clients: { id: string; name: string; company: string | null }[]
+interface TeamLeadOption {
+  id: string
+  name: string
 }
 
-export function CreateProjectDialog({ clients }: CreateProjectDialogProps) {
+interface CreateProjectDialogProps {
+  clients: { id: string; name: string; company: string | null }[]
+  teamLeads: TeamLeadOption[]
+}
+
+export function CreateProjectDialog({ clients, teamLeads }: CreateProjectDialogProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [clientId, setClientId] = useState("")
+  const [clientLabel, setClientLabel] = useState("")
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [techStack, setTechStack] = useState("")
   const [startDate, setStartDate] = useState("")
   const [dueDate, setDueDate] = useState("")
+  const [tlId, setTlId] = useState("")
+  const [tlLabel, setTlLabel] = useState("")
+  const [budget, setBudget] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -46,10 +56,10 @@ export function CreateProjectDialog({ clients }: CreateProjectDialogProps) {
     setLoading(true)
     setError(null)
 
-    const supabase = createClient()
-    const { data, error: err } = await supabase
-      .from("projects")
-      .insert({
+    const res = await fetch("/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         client_id: clientId,
         name: name.trim(),
         description: description.trim() || null,
@@ -61,24 +71,31 @@ export function CreateProjectDialog({ clients }: CreateProjectDialogProps) {
         due_date: dueDate || null,
         status: "kickoff",
         progress: 0,
-      })
-      .select("id")
-      .single()
+        tl_id: tlId || null,
+        budget: budget ? parseFloat(budget) : null,
+      }),
+    })
 
-    if (err) {
-      setError(err.message)
+    const json = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      setError(json.error ?? "Could not create project.")
       setLoading(false)
       return
     }
 
     setOpen(false)
     setClientId("")
+    setClientLabel("")
     setName("")
     setDescription("")
     setTechStack("")
     setStartDate("")
     setDueDate("")
-    router.push(`/projects/${data.id}`)
+    setTlId("")
+    setTlLabel("")
+    setBudget("")
+    router.push(`/projects/${json.id}`)
     router.refresh()
   }
 
@@ -96,16 +113,27 @@ export function CreateProjectDialog({ clients }: CreateProjectDialogProps) {
         <DialogHeader>
           <DialogTitle>Create project</DialogTitle>
           <DialogDescription>
-            Set up a new engagement, then assign workers to it.
+            Set up a new engagement, assign a Team Lead and budget, then workers.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Client */}
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label htmlFor="p-client">Client</Label>
-            <Select value={clientId} onValueChange={(v) => setClientId(v ?? "")}>
+            <Select
+              value={clientId}
+              onValueChange={(v) => {
+                const val = v ?? ""
+                setClientId(val)
+                const found = clients.find((c) => c.id === val)
+                setClientLabel(found ? (found.company ?? found.name) : "")
+              }}
+            >
               <SelectTrigger id="p-client">
-                <SelectValue placeholder="Select the client" />
+                <SelectValue placeholder="Select the client">
+                  {clientLabel || undefined}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {clients.map((c) => (
@@ -117,6 +145,7 @@ export function CreateProjectDialog({ clients }: CreateProjectDialogProps) {
             </Select>
           </div>
 
+          {/* Project name */}
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label htmlFor="p-name">Project name</Label>
             <Input
@@ -127,6 +156,7 @@ export function CreateProjectDialog({ clients }: CreateProjectDialogProps) {
             />
           </div>
 
+          {/* Description */}
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label htmlFor="p-desc">Description</Label>
             <Textarea
@@ -137,6 +167,7 @@ export function CreateProjectDialog({ clients }: CreateProjectDialogProps) {
             />
           </div>
 
+          {/* Tech stack */}
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label htmlFor="p-stack">Tech stack</Label>
             <Input
@@ -147,6 +178,54 @@ export function CreateProjectDialog({ clients }: CreateProjectDialogProps) {
             />
           </div>
 
+          {/* TL selector */}
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="p-tl">Team Lead</Label>
+            <Select
+              value={tlId || "__none__"}
+              onValueChange={(v) => {
+                const val = v ?? ""
+                if (val === "__none__") {
+                  setTlId("")
+                  setTlLabel("")
+                } else {
+                  setTlId(val)
+                  const found = teamLeads.find((tl) => tl.id === val)
+                  setTlLabel(found?.name ?? "")
+                }
+              }}
+            >
+              <SelectTrigger id="p-tl">
+                <SelectValue placeholder="Assign a TL (optional)">
+                  {tlLabel || undefined}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">No Team Lead</SelectItem>
+                {teamLeads.map((tl) => (
+                  <SelectItem key={tl.id} value={tl.id}>
+                    {tl.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Budget */}
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="p-budget">Budget (₹)</Label>
+            <Input
+              id="p-budget"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="e.g. 50000"
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
+            />
+          </div>
+
+          {/* Dates */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="p-start">Start date</Label>
             <Input

@@ -1,6 +1,7 @@
 "use client"
 
-import { ChevronsUpDown, Command, LogOut, Settings, Sparkles } from "lucide-react"
+import Image from "next/image"
+import { ChevronsUpDown, Command, LogOut } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -24,49 +25,19 @@ import { useRouter } from "next/navigation"
 
 function WorkspaceSwitcher() {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className={cn(
-          "flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-3 py-2.5 text-left transition-colors hover:bg-card/80",
-        )}
-      >
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-          <Command className="size-4.5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold leading-tight">AgencyOS</p>
-          <p className="truncate text-xs text-muted-foreground">Meridian Studio · Pro</p>
-        </div>
-        <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-56">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel className="text-xs text-muted-foreground">
-            Workspaces
-          </DropdownMenuLabel>
-        </DropdownMenuGroup>
-        <DropdownMenuItem className="gap-2">
-          <div className="flex size-6 items-center justify-center rounded-md bg-primary text-[10px] font-bold text-primary-foreground">
-            M
-          </div>
-          Meridian Studio
-          <Badge variant="secondary" className="ml-auto">
-            Pro
-          </Badge>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="gap-2">
-          <div className="flex size-6 items-center justify-center rounded-md bg-chart-2 text-[10px] font-bold text-primary-foreground">
-            N
-          </div>
-          Northwind Inc.
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="gap-2 text-muted-foreground">
-          <Settings className="size-4" />
-          Workspace settings
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="flex w-full items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-3 py-2.5">
+      <Image
+        src="/logo.png"
+        alt="JoyCRM Logo"
+        width={36}
+        height={36}
+        className="size-9 shrink-0 rounded-lg object-cover shadow-sm"
+      />
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold leading-tight">JoyCRM</p>
+        <p className="truncate text-xs text-muted-foreground">Joy Corporate Solutions</p>
+      </div>
+    </div>
   )
 }
 
@@ -154,20 +125,6 @@ export function SidebarContent({
         </nav>
       </ScrollArea>
 
-      {role === "team" && (
-        <div className="relative overflow-hidden rounded-xl border border-primary/25 bg-primary/10 p-3">
-          <div className="flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Sparkles className="size-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold">AI Assistant</p>
-              <p className="truncate text-xs text-muted-foreground">Draft, summarize & plan</p>
-            </div>
-          </div>
-        </div>
-      )}
-
       <ProfileMenu name={userName} email={userEmail} role={role} />
     </div>
   )
@@ -209,7 +166,7 @@ function ProfileMenu({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium leading-tight">{displayName}</p>
           <p className="truncate text-xs text-muted-foreground">
-            {role === "worker" ? "Worker" : role === "team" ? "Agency Admin" : "User"}
+            {role === "worker" ? "Worker" : role === "tl" ? "Team Lead" : role === "team" ? "Agency Admin" : "User"}
           </p>
         </div>
         <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
@@ -221,11 +178,6 @@ function ProfileMenu({
             <p className="text-xs font-normal text-muted-foreground">{email}</p>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <Sparkles className="size-4" />
-          Upgrade plan
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={signOut}>
           <LogOut className="size-4" />

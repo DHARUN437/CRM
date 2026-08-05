@@ -1,6 +1,5 @@
 "use client"
 
-import { createClient } from "@/lib/supabase/client"
 import { Plus } from "lucide-react"
 import { useMemo, useState } from "react"
 import { LeadCard } from "@/components/crm/lead-card"
@@ -15,10 +14,10 @@ import { cn } from "@/lib/utils"
 
 interface CrmBoardProps {
   leads: Lead[]
+  onStageChange: (id: string, stage: LeadStage) => void
 }
 
-export function CrmBoard({ leads: initialLeads }: CrmBoardProps) {
-  const [leads, setLeads] = useState<Lead[]>(initialLeads)
+export function CrmBoard({ leads, onStageChange }: CrmBoardProps) {
   const [dragId, setDragId] = useState<string | null>(null)
   const [overStage, setOverStage] = useState<LeadStage | null>(null)
 
@@ -39,38 +38,11 @@ export function CrmBoard({ leads: initialLeads }: CrmBoardProps) {
     e.dataTransfer.effectAllowed = "move"
   }
 
-  async function handleDrop(stage: LeadStage) {
+  function handleDrop(stage: LeadStage) {
     if (!dragId) return
-    const previous = leads.find((l) => l.id === dragId)
-    if (!previous || previous.stage === stage) {
-      setDragId(null)
-      setOverStage(null)
-      return
-    }
-
-    setLeads((prev) =>
-      prev.map((l) =>
-        l.id === dragId
-          ? { ...l, stage, updated_at: new Date().toISOString() }
-          : l
-      )
-    )
+    onStageChange(dragId, stage)
     setDragId(null)
     setOverStage(null)
-
-    const supabase = createClient()
-    const { error } = await supabase
-      .from("leads")
-      .update({ stage, updated_at: new Date().toISOString() })
-      .eq("id", dragId)
-
-    if (error) {
-      setLeads((prev) =>
-        prev.map((l) =>
-          l.id === dragId ? { ...l, stage: previous.stage } : l
-        )
-      )
-    }
   }
 
   return (

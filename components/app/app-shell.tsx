@@ -30,7 +30,7 @@ export function AppShell({
   const [searchOpen, setSearchOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  const title = titles[pathname] ?? "AgencyOS"
+  const title = titles[pathname] ?? "JoyCRM"
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

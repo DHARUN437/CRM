@@ -3,17 +3,10 @@ import {
   Users,
   Contact,
   FolderKanban,
-  CheckSquare,
-  Calendar,
   FileText,
   Receipt,
-  Wallet,
-  LifeBuoy,
   UsersRound,
-  IdCard,
-  BarChart3,
-  Settings,
-  Sparkles,
+  MessageSquareText,
   type LucideIcon,
 } from "lucide-react"
 
@@ -35,10 +28,9 @@ export const navSections: NavSection[] = [
     title: "Workspace",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { label: "CRM", href: "/crm", icon: Users, badge: "12" },
+      { label: "CRM", href: "/crm", icon: Users },
       { label: "Projects", href: "/projects", icon: FolderKanban },
-      { label: "Tasks", href: "/tasks", icon: CheckSquare, soon: true },
-      { label: "Calendar", href: "/calendar", icon: Calendar, soon: true },
+      { label: "Team Chat", href: "/chat", icon: MessageSquareText },
     ],
   },
   {
@@ -46,19 +38,12 @@ export const navSections: NavSection[] = [
     items: [
       { label: "Clients", href: "/clients", icon: Contact },
       { label: "Documents", href: "/documents", icon: FileText },
-      { label: "Invoices", href: "/invoices", icon: Receipt, soon: true },
-      { label: "Finance", href: "/finance", icon: Wallet, soon: true },
-      { label: "Support", href: "/support", icon: LifeBuoy, badge: "3", soon: true },
+      { label: "Invoices", href: "/invoices", icon: Receipt },
     ],
   },
   {
     title: "Organization",
-    items: [
-      { label: "Team", href: "/team", icon: UsersRound },
-      { label: "HR", href: "/hr", icon: IdCard, soon: true },
-      { label: "Reports", href: "/reports", icon: BarChart3, soon: true },
-      { label: "Settings", href: "/settings", icon: Settings, soon: true },
-    ],
+    items: [{ label: "Team", href: "/team", icon: UsersRound }],
   },
 ]
 
@@ -73,6 +58,7 @@ export function navSectionsFor(role: string | null): NavSection[] {
         items: [
           { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
           { label: "My Projects", href: "/projects", icon: FolderKanban },
+          { label: "Team Chat", href: "/chat", icon: MessageSquareText },
         ],
       },
       {
@@ -81,12 +67,25 @@ export function navSectionsFor(role: string | null): NavSection[] {
       },
     ]
   }
+  if (role === "tl") {
+    return [
+      {
+        title: "Workspace",
+        items: [
+          { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+          { label: "My Projects", href: "/projects", icon: FolderKanban },
+          { label: "Team Chat", href: "/chat", icon: MessageSquareText },
+        ],
+      },
+      {
+        title: "Operations",
+        items: [{ label: "Documents", href: "/documents", icon: FileText }],
+      },
+      {
+        title: "Organization",
+        items: [{ label: "Team", href: "/team", icon: UsersRound }],
+      },
+    ]
+  }
   return navSections
-}
-
-export const aiNavItem: NavItem = {
-  label: "AI Assistant",
-  href: "/assistant",
-  icon: Sparkles,
-  soon: true,
 }

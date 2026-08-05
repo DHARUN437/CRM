@@ -1,22 +1,12 @@
 "use client"
 
 import { createClient } from "@/lib/supabase/client"
-import { Bell, PanelLeft, Plus, Search, LogOut } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { PanelLeft, Search, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { ThemeToggle } from "@/components/app/theme-toggle"
-import { activities } from "@/lib/data"
 import { useEffect, useRef, useState } from "react"
+
+import { NotificationsBell } from "@/components/app/notifications-bell"
 
 export function Topbar({
   title,
@@ -100,13 +90,8 @@ export function Topbar({
           <Search className="size-4" />
         </Button>
 
-        <NotificationsMenu />
+        <NotificationsBell />
         <ThemeToggle />
-
-        <Button size="sm" className="gap-1.5">
-          <Plus className="size-4" />
-          <span className="hidden sm:inline">New</span>
-        </Button>
 
         <div ref={menuRef} className="relative">
           <button
@@ -135,52 +120,5 @@ export function Topbar({
         </div>
       </div>
     </header>
-  )
-}
-
-function NotificationsMenu() {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        aria-label="Notifications"
-        className="relative flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      >
-        <Bell className="size-4" />
-        <span className="absolute right-1 top-1 size-2 rounded-full bg-primary ring-2 ring-background" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel className="flex items-center justify-between">
-            <span>Notifications</span>
-            <Badge variant="secondary">6 new</Badge>
-          </DropdownMenuLabel>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        {activities.slice(0, 5).map((a) => (
-          <DropdownMenuItem key={a.id} className="items-start gap-3 py-2">
-            <Avatar className="mt-0.5 size-7">
-              <AvatarFallback
-                style={{ background: a.color }}
-                className="text-[10px] font-semibold text-white"
-              >
-                {a.initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <p className="text-xs leading-snug">
-                <span className="font-medium text-foreground">{a.actor}</span>{" "}
-                <span className="text-muted-foreground">{a.action}</span>{" "}
-                <span className="font-medium text-foreground">{a.target}</span>
-              </p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">{a.time}</p>
-            </div>
-          </DropdownMenuItem>
-        ))}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="justify-center text-sm text-primary">
-          View all notifications
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   )
 }

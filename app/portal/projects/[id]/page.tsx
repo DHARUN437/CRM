@@ -5,7 +5,7 @@ import { fetchMessages } from "@/lib/messages"
 import { UploadDocuments } from "@/components/portal/upload-documents"
 import { DocumentRequests } from "@/components/portal/document-requests"
 import { RequestFeatureDialog } from "@/components/portal/request-feature-dialog"
-import { FeatureRequestsList } from "@/components/projects/feature-requests"
+import { FeatureRequestsLive } from "@/components/projects/feature-requests-live"
 import { TaskBoard } from "@/components/projects/task-board"
 import { ChatThread } from "@/components/chat/chat-thread"
 import { DocumentPreviewLink } from "@/components/portal/document-preview-link"
@@ -46,6 +46,8 @@ import {
   type ProjectTask,
 } from "@/lib/portal-types"
 
+import { NoClientNotice } from "@/components/portal/no-client-notice"
+
 export const dynamic = "force-dynamic"
 
 interface ProjectDetailPageProps {
@@ -57,7 +59,11 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   const supabase = await createClient()
 
   const client = await getActiveClient(supabase)
-  if (!client) redirect("/portal/login")
+  if (!client) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect("/portal/login")
+    return <NoClientNotice email={user.email} />
+  }
 
   const { data: project } = await supabase
     .from("projects")
@@ -103,7 +109,9 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
       .order("sort_order", { ascending: true }),
   ])
 
-  const meta = PROJECT_STATUS_META[project.status as ProjectStatus]
+  const meta =
+    PROJECT_STATUS_META[project.status as ProjectStatus] ??
+    PROJECT_STATUS_META.kickoff
   const teamMembers =
     (assignments as unknown as
       | { team_members: { name: string; role: string } | null }[]
@@ -265,7 +273,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             </div>
             <RequestFeatureDialog projectId={project.id} clientId={client.id} />
           </div>
-          <FeatureRequestsList requests={featureRows} />
+          <FeatureRequestsLive projectId={project.id} initialRequests={featureRows} />
         </section>
 
         <section className="flex flex-col gap-3">
@@ -297,6 +305,9 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
               title: string
               description: string | null
               status: "pending" | "fulfilled"
+              request_type: "document" | "info"
+              priority: "normal" | "urgent"
+              text_response: string | null
               requested_at: string
               linked_document_id: string | null
             }[]).map((request) => ({

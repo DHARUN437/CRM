@@ -14,6 +14,7 @@ export async function POST(request: Request) {
   const name = typeof body?.name === "string" ? body.name.trim() : ""
   const email = typeof body?.email === "string" ? body.email.trim() : ""
   const password = typeof body?.password === "string" ? body.password : ""
+  const roleInput = body?.role === "tl" ? "tl" : "worker"
 
   if (!name || !email || !password) {
     return NextResponse.json({ error: "name, email and password are required" }, { status: 400 })
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     email,
     password,
     email_confirm: true,
-    app_metadata: { role: "worker" },
+    app_metadata: { role: roleInput },
     user_metadata: { full_name: name },
   })
 
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
     .upsert(
       {
         user_id: data.user.id,
-        role: "worker",
+        role: roleInput,
         name,
         email,
       },
@@ -59,5 +60,5 @@ export async function POST(request: Request) {
     .select("id")
     .single()
 
-  return NextResponse.json({ id: data.user.id, name, email })
+  return NextResponse.json({ id: data.user.id, name, email, role: roleInput })
 }

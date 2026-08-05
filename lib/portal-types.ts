@@ -25,6 +25,8 @@ export interface Project {
   tech_stack: string[]
   start_date: string | null
   due_date: string | null
+  budget: number | null
+  tl_id: string | null
   created_at: string
   updated_at: string
 }
@@ -41,12 +43,12 @@ export interface ProjectDocument {
   created_at: string
 }
 
-export type AppRole = "team" | "worker" | "client"
+export type AppRole = "team" | "tl" | "worker" | "client"
 
 export interface TeamMember {
   id: string
   user_id: string
-  role: "team" | "worker"
+  role: "team" | "tl" | "worker"
   name: string
   email: string
   created_at: string
@@ -75,12 +77,18 @@ export interface ProjectMessage {
 
 export type RequestStatus = "pending" | "fulfilled"
 
+export type RequestType = "document" | "info"
+export type RequestPriority = "normal" | "urgent"
+
 export interface DocumentRequest {
   id: string
   project_id: string
   title: string
   description: string | null
   status: RequestStatus
+  request_type: RequestType
+  priority: RequestPriority
+  text_response: string | null
   requested_at: string
   fulfilled_at: string | null
   linked_document_id: string | null
@@ -233,3 +241,150 @@ export interface ProjectTask {
   created_at: string
   updated_at: string
 }
+
+// ---------------------------------------------------------------------------
+// Client notes
+// ---------------------------------------------------------------------------
+
+export interface ClientNote {
+  id: string
+  client_id: string
+  author_id: string
+  body: string
+  created_at: string
+  author_name?: string
+}
+
+// ---------------------------------------------------------------------------
+// Invoices
+// ---------------------------------------------------------------------------
+
+export type InvoiceStatus = "draft" | "pending" | "paid" | "overdue"
+
+export type PaymentMethod = "cash" | "gpay" | "netbanking"
+
+export const INVOICE_PAYMENT_METHOD_META: Record<
+  PaymentMethod,
+  { label: string; badge: string }
+> = {
+  cash: { label: "Cash", badge: "bg-success/15 text-success" },
+  gpay: { label: "GPay", badge: "bg-primary/15 text-primary" },
+  netbanking: { label: "Net Banking", badge: "bg-info/15 text-info" },
+}
+
+export const INVOICE_STATUS_META: Record<
+  InvoiceStatus,
+  { label: string; badge: string }
+> = {
+  draft: { label: "Draft", badge: "bg-muted text-muted-foreground" },
+  pending: { label: "Pending", badge: "bg-warning/15 text-warning" },
+  paid: { label: "Paid", badge: "bg-success/15 text-success" },
+  overdue: { label: "Overdue", badge: "bg-destructive/15 text-destructive" },
+}
+
+export interface InvoiceItem {
+  description: string
+  quantity: number
+  unit_price: number
+}
+
+export interface InvoicePayment {
+  id: string
+  invoice_id: string
+  amount: number
+  method: PaymentMethod
+  notes: string | null
+  created_at: string
+}
+
+export interface ClientPaymentRow extends InvoicePayment {
+  invoice_number: string
+  project_name?: string
+}
+
+export interface Invoice {
+  id: string
+  invoice_number: string
+  client_id: string
+  project_id: string | null
+  amount: number
+  tax: number
+  total: number
+  amount_paid: number
+  status: InvoiceStatus
+  due_date: string
+  paid_at: string | null
+  notes: string | null
+  items: InvoiceItem[]
+  created_at: string
+  updated_at: string
+  client_name?: string
+  project_name?: string
+  amount_due?: number
+  payments?: InvoicePayment[]
+}
+
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+export type NotificationType = "info" | "request" | "upload" | "task" | "chat"
+
+export interface NotificationItem {
+  id: string
+  user_id: string
+  title: string
+  message: string
+  link: string | null
+  read: boolean
+  type: NotificationType
+  created_at: string
+}
+
+// ---------------------------------------------------------------------------
+// Time entries
+// ---------------------------------------------------------------------------
+
+export interface TimeEntry {
+  id: string
+  project_id: string
+  task_id: string | null
+  user_id: string
+  hours: number
+  description: string | null
+  logged_at: string
+  created_at: string
+  user_name?: string
+  task_title?: string
+}
+
+// ---------------------------------------------------------------------------
+// Internal team chat (admins + workers; clients excluded)
+// ---------------------------------------------------------------------------
+
+export type TeamMessageChannelType = "general" | "project" | "dm"
+
+export interface TeamMessage {
+  id: string
+  sender_id: string
+  channel_type: TeamMessageChannelType
+  project_id: string | null
+  dm_peer_id: string | null
+  body: string
+  created_at: string
+  read_by: string[]
+  sender_name?: string
+  sender_role?: string
+}
+
+export interface TeamDirectoryMember {
+  id: string
+  user_id: string
+  name: string
+  role: "team" | "tl" | "worker"
+}
+
+export type TeamChannel =
+  | { kind: "general" }
+  | { kind: "project"; projectId: string; name: string }
+  | { kind: "dm"; peerId: string; peerName: string; peerRole: "team" | "tl" | "worker" }

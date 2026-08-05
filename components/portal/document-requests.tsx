@@ -1,6 +1,7 @@
 "use client"
 
 import { createClient } from "@/lib/supabase/client"
+import { optimizeFileForUpload, CDN_UPLOAD_OPTIONS } from "@/lib/media-optimization"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -9,15 +10,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { Textarea } from "@/components/ui/textarea"
 import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
 import {
+  AlertTriangle,
   CheckCircle2,
   CloudUpload,
   FileQuestion,
   Loader2,
+  MessageSquare,
+  Send,
 } from "lucide-react"
 import { formatDate } from "@/lib/portal-types"
 
@@ -26,6 +30,9 @@ interface PortalRequest {
   title: string
   description: string | null
   status: "pending" | "fulfilled"
+  request_type: "document" | "info"
+  priority: "normal" | "urgent"
+  text_response: string | null
   requested_at: string
   linkedName: string | null
 }
@@ -36,20 +43,24 @@ interface DocumentRequestsProps {
   requests: PortalRequest[]
 }
 
-export function DocumentRequests({
+function RequestItem({
+  request,
   clientId,
   projectId,
-  requests,
-}: DocumentRequestsProps) {
+}: {
+  request: PortalRequest
+  clientId: string
+  projectId: string
+}) {
   const router = useRouter()
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [busyId, setBusyId] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [textReply, setTextReply] = useState("")
+  const [showReply, setShowReply] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const pending = requests.filter((r) => r.status === "pending")
-
-  async function fulfill(request: PortalRequest, file: File) {
-    setBusyId(request.id)
+  async function fulfillWithFile(file: File) {
+    setBusy(true)
     setError(null)
 
     const supabase = createClient()
@@ -57,15 +68,19 @@ export function DocumentRequests({
       data: { user },
     } = await supabase.auth.getUser()
 
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-")
+    const { file: optimizedFile } = await optimizeFileForUpload(file)
+    const safeName = optimizedFile.name.replace(/[^a-zA-Z0-9._-]/g, "-")
     const path = `${clientId}/${projectId}/${crypto.randomUUID()}-${safeName}`
 
     const { error: uploadError } = await supabase.storage
       .from("client-documents")
-      .upload(path, file, { upsert: false })
+      .upload(path, optimizedFile, {
+        ...CDN_UPLOAD_OPTIONS,
+        contentType: optimizedFile.type || undefined,
+      })
 
     if (uploadError) {
-      setBusyId(null)
+      setBusy(false)
       setError(uploadError.message)
       return
     }
@@ -75,22 +90,22 @@ export function DocumentRequests({
       .insert({
         project_id: projectId,
         client_id: clientId,
-        name: file.name,
+        name: optimizedFile.name,
         file_path: path,
-        file_type: file.type || "application/octet-stream",
-        file_size: file.size,
+        file_type: optimizedFile.type || "application/octet-stream",
+        file_size: optimizedFile.size,
         uploaded_by: user?.id ?? null,
       })
       .select("id")
       .single()
 
     if (rowError || !doc) {
-      setBusyId(null)
+      setBusy(false)
       setError(rowError?.message ?? "Could not save the upload.")
       return
     }
 
-    const { error: updateError } = await supabase
+    await supabase
       .from("document_requests")
       .update({
         status: "fulfilled",
@@ -99,99 +114,257 @@ export function DocumentRequests({
       })
       .eq("id", request.id)
 
-    setBusyId(null)
-    if (updateError) {
-      setError(updateError.message)
+    setBusy(false)
+    router.refresh()
+  }
+
+  async function fulfillWithText() {
+    if (!textReply.trim()) return
+    setBusy(true)
+    setError(null)
+
+    const supabase = createClient()
+    const { error: err } = await supabase
+      .from("document_requests")
+      .update({
+        status: "fulfilled",
+        fulfilled_at: new Date().toISOString(),
+        text_response: textReply.trim(),
+      })
+      .eq("id", request.id)
+
+    setBusy(false)
+    if (err) {
+      setError(err.message)
       return
     }
 
-    if (inputRef.current) inputRef.current.value = ""
+    setShowReply(false)
     router.refresh()
   }
+
+  const isFulfilled = request.status === "fulfilled"
+
+  return (
+    <div className="flex flex-col gap-3 bg-background p-4">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {request.request_type === "info" ? (
+              <MessageSquare className="size-3.5 shrink-0 text-muted-foreground" />
+            ) : (
+              <FileQuestion className="size-3.5 shrink-0 text-muted-foreground" />
+            )}
+            <p className="text-sm font-medium">{request.title}</p>
+            {request.priority === "urgent" && (
+              <Badge className="bg-destructive/15 text-destructive">
+                <AlertTriangle className="size-3" />
+                Urgent
+              </Badge>
+            )}
+          </div>
+          {request.description && (
+            <p className="text-xs text-muted-foreground">{request.description}</p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            {isFulfilled
+              ? `Responded · ${formatDate(request.requested_at)}`
+              : `Requested ${formatDate(request.requested_at)}`}
+          </p>
+        </div>
+
+        {isFulfilled ? (
+          <Badge className="shrink-0 bg-success/15 text-success">
+            <CheckCircle2 className="size-3" />
+            Done
+          </Badge>
+        ) : (
+          <div className="flex shrink-0 items-center gap-2">
+            {/* Document upload */}
+            {request.request_type === "document" && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {busy ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <CloudUpload className="size-4" />
+                  )}
+                  Upload file
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) fulfillWithFile(file)
+                    if (fileInputRef.current) fileInputRef.current.value = ""
+                  }}
+                />
+              </>
+            )}
+
+            {/* Info text reply */}
+            {request.request_type === "info" && !showReply && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowReply(true)}
+              >
+                <MessageSquare className="size-4" />
+                Reply
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Show fulfilled text response */}
+      {isFulfilled && request.text_response && (
+        <div className="rounded-lg border border-success/30 bg-success/5 px-3 py-2 text-sm">
+          <p className="text-xs font-medium text-success mb-1">Your response:</p>
+          <p className="text-foreground whitespace-pre-wrap">{request.text_response}</p>
+        </div>
+      )}
+
+      {/* Inline reply box */}
+      {showReply && !isFulfilled && (
+        <div className="flex flex-col gap-2">
+          <Textarea
+            value={textReply}
+            onChange={(e) => setTextReply(e.target.value)}
+            placeholder="Type your response here…"
+            rows={3}
+            className="text-sm"
+          />
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={fulfillWithText}
+              disabled={!textReply.trim() || busy}
+            >
+              {busy ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Send className="size-4" />
+              )}
+              Submit response
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowReply(false)}
+              disabled={busy}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Also allow document-type to have an alternative text answer */}
+      {request.request_type === "document" && !isFulfilled && (
+        <button
+          type="button"
+          onClick={() => setShowReply(!showReply)}
+          className="text-left text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2 w-fit"
+        >
+          {showReply ? "Hide text reply" : "Or send a text response instead"}
+        </button>
+      )}
+
+      {showReply && request.request_type === "document" && !isFulfilled && (
+        <div className="flex flex-col gap-2">
+          <Textarea
+            value={textReply}
+            onChange={(e) => setTextReply(e.target.value)}
+            placeholder="Type your response here instead of uploading a file…"
+            rows={3}
+            className="text-sm"
+          />
+          <Button
+            size="sm"
+            onClick={fulfillWithText}
+            disabled={!textReply.trim() || busy}
+            className="w-fit"
+          >
+            {busy ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Send className="size-4" />
+            )}
+            Submit response
+          </Button>
+        </div>
+      )}
+
+      {error && (
+        <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </p>
+      )}
+    </div>
+  )
+}
+
+export function DocumentRequests({
+  clientId,
+  projectId,
+  requests,
+}: DocumentRequestsProps) {
+  const pending = requests.filter((r) => r.status === "pending")
+  const fulfilled = requests.filter((r) => r.status === "fulfilled")
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <FileQuestion className="size-4" />
-          Documents the team needs from you
+          Requests from your team
+          {pending.length > 0 && (
+            <Badge className="bg-warning/15 text-warning ml-1">
+              {pending.length} pending
+            </Badge>
+          )}
         </CardTitle>
         <CardDescription>
-          Files requested by your team — upload them here and they&apos;re shared
-          instantly.
+          Your development team has requested these files or information. Please
+          respond to each one so they can move forward.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         {!requests.length ? (
           <p className="text-sm text-muted-foreground">
-            Nothing requested right now — you&apos;re all caught up.
+            Nothing requested right now — you&apos;re all caught up. ✅
           </p>
         ) : (
-          <div className="flex flex-col overflow-hidden rounded-xl border border-foreground/10">
-            {requests.map((request, index) => {
-              const busy = busyId === request.id
-              return (
-                <div key={request.id}>
-                  {index > 0 && <Separator />}
-                  <div className="flex flex-col gap-3 bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex min-w-0 flex-col gap-1">
-                      <p className="text-sm font-medium">{request.title}</p>
-                      {request.description && (
-                        <p className="line-clamp-1 text-xs text-muted-foreground">
-                          {request.description}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        {request.status === "fulfilled"
-                          ? `Uploaded${request.linkedName ? ` — ${request.linkedName}` : ""} · ${formatDate(request.requested_at)}`
-                          : `Requested ${formatDate(request.requested_at)}`}
-                      </p>
-                    </div>
-
-                    {request.status === "fulfilled" ? (
-                      <Badge className="shrink-0 bg-success/15 text-success">
-                        <CheckCircle2 className="size-3" />
-                        Received
-                      </Badge>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="shrink-0"
-                        disabled={busy}
-                        onClick={() => inputRef.current?.click()}
-                      >
-                        {busy ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <CloudUpload className="size-4" />
-                        )}
-                        Upload to fulfill
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
+          <div className="flex flex-col divide-y divide-foreground/10 overflow-hidden rounded-xl border border-foreground/10">
+            {/* Pending first */}
+            {pending.map((request) => (
+              <RequestItem
+                key={request.id}
+                request={request}
+                clientId={clientId}
+                projectId={projectId}
+              />
+            ))}
+            {/* Then fulfilled */}
+            {fulfilled.map((request) => (
+              <RequestItem
+                key={request.id}
+                request={request}
+                clientId={clientId}
+                projectId={projectId}
+              />
+            ))}
           </div>
         )}
-
-        {error && (
-          <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {error}
-          </p>
-        )}
-
-        <input
-          ref={inputRef}
-          type="file"
-          className="hidden"
-          onChange={(e) => {
-            const request = pending[0]
-            const file = e.target.files?.[0]
-            if (request && file) fulfill(request, file)
-          }}
-        />
       </CardContent>
     </Card>
   )

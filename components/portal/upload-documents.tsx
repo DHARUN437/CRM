@@ -1,6 +1,7 @@
 "use client"
 
 import { createClient } from "@/lib/supabase/client"
+import { optimizeFileForUpload, CDN_UPLOAD_OPTIONS } from "@/lib/media-optimization"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -82,12 +83,16 @@ export function UploadDocuments({
       updated[i] = { ...item, status: "uploading" }
       setFiles([...updated])
 
-      const safeName = item.file.name.replace(/[^a-zA-Z0-9._-]/g, "-")
+      const { file: optimizedFile } = await optimizeFileForUpload(item.file)
+      const safeName = optimizedFile.name.replace(/[^a-zA-Z0-9._-]/g, "-")
       const path = `${clientId}/${projectId}/${crypto.randomUUID()}-${safeName}`
 
       const { error: uploadError } = await supabase.storage
         .from("client-documents")
-        .upload(path, item.file, { upsert: false })
+        .upload(path, optimizedFile, {
+          ...CDN_UPLOAD_OPTIONS,
+          contentType: optimizedFile.type || undefined,
+        })
 
       if (uploadError) {
         updated[i] = { ...item, status: "error", error: uploadError.message }
@@ -98,10 +103,10 @@ export function UploadDocuments({
       const { error: rowError } = await supabase.from("project_documents").insert({
         project_id: projectId,
         client_id: clientId,
-        name: item.file.name,
+        name: optimizedFile.name,
         file_path: path,
-        file_type: item.file.type || "application/octet-stream",
-        file_size: item.file.size,
+        file_type: optimizedFile.type || "application/octet-stream",
+        file_size: optimizedFile.size,
         uploaded_by: user?.id ?? null,
       })
 

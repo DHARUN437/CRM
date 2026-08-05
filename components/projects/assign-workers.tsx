@@ -72,7 +72,7 @@ export function AssignWorkers({
         render={
           <Button variant="outline" size="sm">
             <UserPlus className="size-4" />
-            Manage workers
+            Manage team
           </Button>
         }
       />
@@ -81,7 +81,7 @@ export function AssignWorkers({
           <DialogTitle>Assign workers</DialogTitle>
           <DialogDescription>
             Choose who works on this project. Assigned workers can view it and
-            update its status.
+            update its status. Workers you add here will be able to chat in the project channel.
           </DialogDescription>
         </DialogHeader>
 

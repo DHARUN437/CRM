@@ -17,9 +17,12 @@ import { Progress } from "@/components/ui/progress"
 import { ArrowUpRight, CalendarDays } from "lucide-react"
 import { PROJECT_STATUS_META, formatDate, type Project } from "@/lib/portal-types"
 
-export function initials(name: string) {
+export function initials(name?: string | null) {
+  if (!name) return "??"
   return name
-    .split(" ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
     .map((p) => p[0])
     .slice(0, 2)
     .join("")
@@ -33,7 +36,9 @@ export function ProjectCard({
   project: Project
   team?: { name: string }[]
 }) {
-  const meta = PROJECT_STATUS_META[project.status]
+  const meta =
+    PROJECT_STATUS_META[project.status] ??
+    PROJECT_STATUS_META.kickoff
 
   return (
     <Link href={`/portal/projects/${project.id}`} className="group block h-full">

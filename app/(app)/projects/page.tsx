@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { getCurrentUser } from "@/lib/supabase/session"
 import { CreateProjectDialog } from "@/components/projects/create-project-dialog"
+import { getClientsForSelect } from "@/lib/clients"
 import { fetchMessageCounts } from "@/lib/messages"
 import { ProjectCard } from "@/components/projects/project-card"
 import { Card, CardContent } from "@/components/ui/card"
@@ -16,10 +18,11 @@ export default async function ProjectsPage() {
   if (!user) redirect("/login")
 
   const isWorker = user.role === "worker"
+  const isTL = user.role === "tl"
   const isAdmin = user.role === "team"
 
-  // Resolve the current worker's team member row (for assignment filtering).
-  const { data: myMember } = isWorker
+  // Resolve the current worker/TL's team_members row for filtering.
+  const { data: myMember } = (isWorker || isTL)
     ? await supabase
         .from("team_members")
         .select("id")
@@ -42,16 +45,60 @@ export default async function ProjectsPage() {
       .order("created_at", { ascending: false })
   }
 
-  const { data: projects } = await projectQuery
+  if (isTL && myMember) {
+    // TL sees projects where they are the TL
+    projectQuery = supabase
+      .from("projects")
+      .select("*, clients(name, company)")
+      .eq("tl_id", myMember.id)
+      .order("created_at", { ascending: false })
+  }
+
+  let { data: projects } = await projectQuery
+
+  if ((!projects || projects.length === 0) && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const admin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    if (isAdmin) {
+      const { data: adminProjects } = await admin
+        .from("projects")
+        .select("*, clients(name, company)")
+        .order("created_at", { ascending: false })
+      if (adminProjects && adminProjects.length > 0) {
+        projects = adminProjects
+      }
+    } else if (isTL && myMember) {
+      const { data: adminProjects } = await admin
+        .from("projects")
+        .select("*, clients(name, company)")
+        .eq("tl_id", myMember.id)
+        .order("created_at", { ascending: false })
+      if (adminProjects && adminProjects.length > 0) {
+        projects = adminProjects
+      }
+    }
+  }
 
   const projectIds = (projects ?? []).map((p) => p.id)
-  const [{ data: assignments }, messageCounts] = await Promise.all([
+  const [{ data: assignments }, messageCounts, { data: teamLeads }, clientList] = await Promise.all([
     isAdmin
       ? supabase
           .from("project_assignments")
           .select("project_id, team_members(name, role)")
       : { data: [] },
     fetchMessageCounts(supabase, projectIds),
+    isAdmin
+      ? supabase
+          .from("team_members")
+          .select("id, name")
+          .eq("role", "tl")
+          .order("name", { ascending: true })
+      : { data: [] },
+    isAdmin ? getClientsForSelect() : Promise.resolve([]),
   ])
 
   const assignmentCounts = new Map<string, number>()
@@ -61,7 +108,7 @@ export default async function ProjectsPage() {
 
   const stats = [
     {
-      label: isWorker ? "Assigned projects" : "Total projects",
+      label: (isWorker || isTL) ? "Assigned projects" : "Total projects",
       value: projects?.length ?? 0,
       icon: FolderKanban,
     },
@@ -90,20 +137,20 @@ export default async function ProjectsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-1">
           <h2 className="text-balance text-2xl font-semibold tracking-tight">
-            {isWorker ? "My Projects" : "Projects"}
+            {isTL ? "My Projects" : isWorker ? "My Projects" : "Projects"}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {isWorker
+            {isTL
+              ? "Projects you lead — assign teammates and track their progress."
+              : isWorker
               ? "Projects assigned to you — update their status as you work."
               : "Every engagement, its team and progress in one place."}
           </p>
         </div>
         {isAdmin && (
           <CreateProjectDialog
-            clients={
-              ((await supabase.from("clients").select("id, name, company"))
-                .data ?? []) as { id: string; name: string; company: string | null }[]
-            }
+            clients={clientList}
+            teamLeads={(teamLeads ?? []) as { id: string; name: string }[]}
           />
         )}
       </div>
@@ -129,7 +176,9 @@ export default async function ProjectsPage() {
       {!projects?.length ? (
         <Card>
           <CardContent className="p-10 text-center text-sm text-muted-foreground">
-            {isWorker
+            {isTL
+              ? "No projects assigned to you as Team Lead yet."
+              : isWorker
               ? "You haven't been assigned to any projects yet."
               : "No projects yet — create your first one."}
           </CardContent>

@@ -22,8 +22,8 @@ const STATUS_ICONS: Record<ProjectStatus, typeof Check> = {
 }
 
 export function ProjectStatusTimeline({ status }: { status: ProjectStatus }) {
-  const currentIndex = PROJECT_STATUS_ORDER.indexOf(status)
-  const meta = PROJECT_STATUS_META[status]
+  const currentIndex = Math.max(0, PROJECT_STATUS_ORDER.indexOf(status))
+  const meta = PROJECT_STATUS_META[status] ?? PROJECT_STATUS_META.kickoff
 
   return (
     <div className="flex flex-col gap-4">

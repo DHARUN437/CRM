@@ -8,16 +8,27 @@ import type { ClientProfile } from "@/lib/portal-types"
 export async function getActiveClient(
   supabase: SupabaseClient
 ): Promise<ClientProfile | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
+  try {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+    if (authError || !user) return null
 
-  const { data } = await supabase
-    .from("clients")
-    .select("*")
-    .eq("user_id", user.id)
-    .maybeSingle()
+    const { data, error } = await supabase
+      .from("clients")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle()
 
-  return (data as ClientProfile | null) ?? null
+    if (error) {
+      console.error("Error in getActiveClient query:", error)
+      return null
+    }
+
+    return (data as ClientProfile | null) ?? null
+  } catch (err) {
+    console.error("Exception in getActiveClient:", err)
+    return null
+  }
 }

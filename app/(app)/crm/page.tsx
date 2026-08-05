@@ -1,15 +1,11 @@
-import { CrmBoard } from "@/components/crm/crm-board"
-import { CrmFunnel } from "@/components/crm/crm-funnel"
+import { CrmDashboard } from "@/components/crm/crm-dashboard"
 import { PageHeader } from "@/components/app/page-header"
 import { NewLeadDialog } from "@/components/crm/new-lead-dialog"
 import { ExportLeadsButton } from "@/components/crm/export-leads-button"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createClient } from "@/lib/supabase/server"
 import {
   avatarColor,
-  currency,
   initials,
   type Lead,
 } from "@/lib/crm"
@@ -39,28 +35,6 @@ export default async function CrmPage() {
     tags: row.tags ?? [],
   }))
 
-  const openValue = leads
-    .filter((l) => l.stage !== "won")
-    .reduce((sum, l) => sum + l.value, 0)
-  const wonValue = leads
-    .filter((l) => l.stage === "won")
-    .reduce((sum, l) => sum + l.value, 0)
-  const avgScore = leads.length
-    ? Math.round(leads.reduce((sum, l) => sum + l.score, 0) / leads.length)
-    : 0
-  const winRate = leads.length
-    ? Math.round(
-        (leads.filter((l) => l.stage === "won").length / leads.length) * 100,
-      )
-    : 0
-
-  const stats = [
-    { label: "Open pipeline", value: currency(openValue) },
-    { label: "Won this quarter", value: currency(wonValue) },
-    { label: "Avg. lead score", value: `${avgScore}` },
-    { label: "Win rate", value: `${winRate}%` },
-  ]
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -74,33 +48,7 @@ export default async function CrmPage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {stats.map((s) => (
-          <Card key={s.label}>
-            <CardContent className="p-4">
-              <p className="text-xs font-medium text-muted-foreground">
-                {s.label}
-              </p>
-              <p className="mt-1 text-xl font-semibold tracking-tight">
-                {s.value}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Tabs defaultValue="board" className="w-full">
-        <TabsList>
-          <TabsTrigger value="board">Pipeline</TabsTrigger>
-          <TabsTrigger value="funnel">Funnel</TabsTrigger>
-        </TabsList>
-        <TabsContent value="board" className="mt-4">
-          <CrmBoard leads={leads} />
-        </TabsContent>
-        <TabsContent value="funnel" className="mt-4">
-          <CrmFunnel leads={leads} />
-        </TabsContent>
-      </Tabs>
+      <CrmDashboard initialLeads={leads} />
     </div>
   )
 }

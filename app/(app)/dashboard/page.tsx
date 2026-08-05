@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { getCurrentUser } from "@/lib/supabase/session"
 import { fetchRecentMessages } from "@/lib/messages"
 import { Badge } from "@/components/ui/badge"
@@ -31,9 +32,11 @@ export default async function DashboardPage() {
   if (!user) redirect("/login")
 
   const isWorker = user.role === "worker"
+  const isTL = user.role === "tl"
+  const isAdmin = user.role === "team"
 
-  // Resolve the worker's team member id for assignment filtering.
-  const { data: myMember } = isWorker
+  // Resolve the worker/TL's team member id for filtering.
+  const { data: myMember } = (isWorker || isTL)
     ? await supabase
         .from("team_members")
         .select("id")
@@ -57,9 +60,41 @@ export default async function DashboardPage() {
 
   if (isWorker && projectIdsForWorker) {
     projectsQuery = projectsQuery.in("id", projectIdsForWorker)
+  } else if (isTL && myMember) {
+    projectsQuery = projectsQuery.eq("tl_id", myMember.id)
   }
 
-  const { data: projects } = await projectsQuery
+  let { data: projects } = await projectsQuery
+
+  if ((!projects || projects.length === 0) && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const admin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    if (isAdmin) {
+      const { data: adminProjects } = await admin
+        .from("projects")
+        .select("*")
+        .order("created_at", { ascending: true })
+      if (adminProjects && adminProjects.length > 0) projects = adminProjects
+    } else if (isTL && myMember) {
+      const { data: adminProjects } = await admin
+        .from("projects")
+        .select("*")
+        .eq("tl_id", myMember.id)
+        .order("created_at", { ascending: true })
+      if (adminProjects && adminProjects.length > 0) projects = adminProjects
+    } else if (isWorker && projectIdsForWorker && projectIdsForWorker.length > 0) {
+      const { data: adminProjects } = await admin
+        .from("projects")
+        .select("*")
+        .in("id", projectIdsForWorker)
+        .order("created_at", { ascending: true })
+      if (adminProjects && adminProjects.length > 0) projects = adminProjects
+    }
+  }
 
   const all = (projects ?? []) as {
     id: string
@@ -80,12 +115,18 @@ export default async function DashboardPage() {
         .select("id")
         .in(
           "project_id",
-          all.map((p) => p.id)
+          all.length ? all.map((p) => p.id) : ["00000000-0000-0000-0000-000000000000"]
         ),
-      isWorker ? { data: [] } : supabase.from("team_members").select("id"),
+      (isWorker || isTL)
+        ? { data: [] }
+        : supabase.from("team_members").select("id"),
       fetchRecentMessages(
         supabase,
-        isWorker ? (projectIdsForWorker ?? []) : null,
+        isWorker
+          ? (projectIdsForWorker ?? [])
+          : isTL
+          ? all.map((p) => p.id)
+          : null,
         6
       ),
     ])
@@ -96,6 +137,13 @@ export default async function DashboardPage() {
     ? [
         { label: "Assigned projects", value: all.length, icon: FolderKanban },
         { label: "In progress", value: inProgress.length, icon: FolderClock },
+        { label: "Completed", value: completed.length, icon: FolderCheck },
+        { label: "Messages", value: recentMessages.length, icon: MessageSquareText },
+      ]
+    : isTL
+    ? [
+        { label: "Led projects", value: all.length, icon: FolderKanban },
+        { label: "Active projects", value: active.length, icon: FolderClock },
         { label: "Completed", value: completed.length, icon: FolderCheck },
         { label: "Messages", value: recentMessages.length, icon: MessageSquareText },
       ]
@@ -122,11 +170,13 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
         <p className="text-sm text-muted-foreground">
-          Welcome back{isWorker ? "" : ", boss"} — {displayName}
+          Welcome back{isAdmin ? ", boss" : ""} — {displayName}
         </p>
         <h2 className="text-balance text-2xl font-semibold tracking-tight">
           {isWorker
             ? "Here's what's on your plate"
+            : isTL
+            ? "Here's what's happening on projects you lead"
             : "Here's what's happening across your projects"}
         </h2>
       </div>
@@ -149,7 +199,7 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {!isWorker && (
+      {isAdmin && (
         <div className="flex items-center gap-2">
           <Button render={<Link href="/projects" />}>
             <Plus className="size-4" />
@@ -169,6 +219,8 @@ export default async function DashboardPage() {
               <CardContent className="p-10 text-center text-sm text-muted-foreground">
                 {isWorker
                   ? "No projects assigned to you yet."
+                  : isTL
+                  ? "No projects assigned to you as Team Lead yet."
                   : "No projects yet — create your first one."}
               </CardContent>
             </Card>
@@ -176,7 +228,7 @@ export default async function DashboardPage() {
             <section className="flex flex-col gap-3">
               <CardHeader className="px-0 pb-0">
                 <CardTitle className="text-lg">
-                  {isWorker ? "My projects" : "Projects by status"}
+                  {isWorker ? "My projects" : isTL ? "Projects you lead" : "Projects by status"}
                 </CardTitle>
                 {!isWorker && statusBreakdown.length > 0 && (
                   <CardDescription>

@@ -36,11 +36,17 @@ export async function POST(request: Request) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
+  // Pass full_name + company in app_metadata so the DB trigger
+  // (which reads raw_app_meta_data) creates the clients row correctly.
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
-    app_metadata: { role: "client" },
+    app_metadata: {
+      role: "client",
+      full_name: name,
+      company: company || undefined,
+    },
     user_metadata: { full_name: name, company: company || undefined },
   })
 
@@ -48,7 +54,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
 
-  // The auth trigger creates the clients row; upsert as a fallback.
+  // Upsert with DO UPDATE so the correct name/company is always written,
+  // even if the trigger already inserted a row with fallback values.
   await admin
     .from("clients")
     .upsert(
@@ -58,7 +65,7 @@ export async function POST(request: Request) {
         company: company || null,
         email,
       },
-      { onConflict: "user_id" }
+      { onConflict: "user_id", ignoreDuplicates: false }
     )
     .select("id")
     .single()
