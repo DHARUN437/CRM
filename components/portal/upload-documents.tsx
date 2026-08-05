@@ -133,6 +133,7 @@ export function UploadDocuments({
     }
   }
 
+  const selectedProject = projects.find((p) => p.id === projectId)
   const canUpload = projectId && files.length > 0 && !uploading
 
   return (
@@ -162,7 +163,9 @@ export function UploadDocuments({
               disabled={Boolean(presetProjectId)}
             >
               <SelectTrigger id="upload-project">
-                <SelectValue placeholder="Select a project" />
+                <SelectValue placeholder="Select a project">
+                  {selectedProject?.name ?? (projectId ? "Selected Project" : undefined)}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {projects.map((p) => (
