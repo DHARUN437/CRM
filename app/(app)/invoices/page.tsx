@@ -5,9 +5,8 @@ import { hasPermission } from "@/lib/permissions"
 import { InvoicesList } from "@/components/invoices/invoices-list"
 import { CreateInvoiceDialog } from "@/components/invoices/create-invoice-dialog"
 import { Receipt } from "lucide-react"
-import { type ClientPaymentRow, type Invoice } from "@/lib/portal-types"
-
 import { getClientsForSelect } from "@/lib/clients"
+import { getAllInvoicesWithData } from "@/lib/invoices"
 
 export const dynamic = "force-dynamic"
 
@@ -19,63 +18,14 @@ export default async function InvoicesPage() {
   const supabase = await createClient()
 
   const [
-    { data: invoices },
+    { invoices, paymentsByClient },
     clients,
     { data: projects },
-    { data: paymentRows },
   ] = await Promise.all([
-    supabase
-      .from("invoices")
-      .select("*")
-      .order("created_at", { ascending: false }),
+    getAllInvoicesWithData(),
     getClientsForSelect(),
     supabase.from("projects").select("id, name, client_id"),
-    supabase
-      .from("invoice_payments")
-      .select("*, invoices!inner(invoice_number, project_id, projects(name))")
-      .order("created_at", { ascending: false }),
   ])
-
-  const payments = (paymentRows ?? []).map((p: Record<string, unknown>) => {
-    const inv = p.invoices as
-      | { invoice_number: string; projects: { name: string } | null }
-      | null
-    return {
-      id: p.id as string,
-      invoice_id: p.invoice_id as string,
-      amount: Number(p.amount),
-      method: p.method as ClientPaymentRow["method"],
-      notes: (p.notes as string) || null,
-      created_at: p.created_at as string,
-      invoice_number: inv?.invoice_number ?? "—",
-      project_name: inv?.projects?.name ?? undefined,
-    }
-  })
-
-  const invoiceToClient = new Map<string, string>()
-  for (const inv of invoices ?? []) {
-    invoiceToClient.set(inv.id, inv.client_id)
-  }
-
-  const paymentsByInvoice = new Map<string, ClientPaymentRow[]>()
-  const paymentsByClient = new Map<string, ClientPaymentRow[]>()
-  for (const payment of payments) {
-    const invoiceList = paymentsByInvoice.get(payment.invoice_id) ?? []
-    invoiceList.push(payment)
-    paymentsByInvoice.set(payment.invoice_id, invoiceList)
-
-    const clientId = invoiceToClient.get(payment.invoice_id)
-    if (clientId) {
-      const clientList = paymentsByClient.get(clientId) ?? []
-      clientList.push(payment)
-      paymentsByClient.set(clientId, clientList)
-    }
-  }
-
-  const withPayments = (invoices ?? []).map((inv) => ({
-    ...inv,
-    payments: paymentsByInvoice.get(inv.id) ?? [],
-  }))
 
   const isAdmin = user.role === "team"
 
@@ -97,13 +47,7 @@ export default async function InvoicesPage() {
 
         {isAdmin && (
           <CreateInvoiceDialog
-            clients={
-              (clients ?? []) as {
-                id: string
-                name: string
-                company: string | null
-              }[]
-            }
+            clients={clients}
             projects={
               (projects ?? []) as {
                 id: string
@@ -116,7 +60,7 @@ export default async function InvoicesPage() {
       </div>
 
       <InvoicesList
-        invoices={(withPayments as unknown as Invoice[])}
+        invoices={invoices}
         isAdmin={isAdmin}
         paymentsByClient={paymentsByClient}
       />
