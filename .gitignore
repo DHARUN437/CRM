@@ -6,13 +6,16 @@ __v0_jsx-dev-runtime.ts
 .v0-trash/
 .vercel/
 
-# Environment variables
+# Environment variables & secrets
+.env
 .env*.local
+.env.production
 
 # Common ignores
-node_modules
+node_modules/
 .next/
 .DS_Store
+*.pem
 
 # Dev server logs
 dev-server.log
@@ -22,5 +25,8 @@ dev-server-err.log
 # TypeScript build cache
 tsconfig.tsbuildinfo
 
-# Archive files
+# Archive & build files
 *.zip
+*.tar
+*.gz
+*.tgz
