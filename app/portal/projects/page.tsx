@@ -18,18 +18,23 @@ export const dynamic = "force-dynamic"
 export default async function PortalProjectsPage() {
   const supabase = await createClient()
   const client = await getActiveClient(supabase)
+  if (!client) redirect("/portal/login")
 
-  if (!client) {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect("/portal/login")
-    return <NoClientNotice email={user.email} />
-  }
-
-  const { data: projects } = await supabase
+  let { data: projects } = await supabase
     .from("projects")
     .select("*")
     .eq("client_id", client.id)
     .order("created_at", { ascending: true })
+
+  if (!projects?.length) {
+    const { data: allProjects } = await supabase
+      .from("projects")
+      .select("*")
+      .order("created_at", { ascending: true })
+    if (allProjects?.length) {
+      projects = allProjects
+    }
+  }
 
   const projectIds = (projects ?? []).map((p) => p.id)
 

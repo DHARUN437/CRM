@@ -11,11 +11,7 @@ export const dynamic = "force-dynamic"
 export default async function ClientInvoicesPage() {
   const supabase = await createClient()
   const client = await getActiveClient(supabase)
-  if (!client) {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect("/portal/login")
-    return <NoClientNotice email={user.email} />
-  }
+  if (!client) redirect("/portal/login")
 
   const invoices = await getInvoicesForClient(client.id)
 

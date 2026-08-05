@@ -59,11 +59,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   const supabase = await createClient()
 
   const client = await getActiveClient(supabase)
-  if (!client) {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect("/portal/login")
-    return <NoClientNotice email={user.email} />
-  }
+  if (!client) redirect("/portal/login")
 
   const { data: project } = await supabase
     .from("projects")

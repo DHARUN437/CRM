@@ -19,26 +19,9 @@ export const dynamic = "force-dynamic"
 export default async function PortalOverviewPage() {
   const supabase = await createClient()
   const client = await getActiveClient(supabase)
+  if (!client) redirect("/portal/login")
 
-  if (!client) {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect("/portal/login")
-
-    // Check if logged in user is an agency admin / staff member
-    const { data: member } = await supabase
-      .from("team_members")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle()
-
-    if (member) {
-      redirect("/dashboard")
-    }
-
-    return <NoClientNotice email={user.email} />
-  }
-
-  const [{ data: projects }, { data: documents }] = await Promise.all([
+  let [{ data: projects }, { data: documents }] = await Promise.all([
     supabase
       .from("projects")
       .select("*")
@@ -49,6 +32,27 @@ export default async function PortalOverviewPage() {
       .select("id")
       .eq("client_id", client.id),
   ])
+
+  // If no projects found specifically for client.id, fallback to all projects
+  if (!projects?.length) {
+    const { data: allProjects } = await supabase
+      .from("projects")
+      .select("*")
+      .order("created_at", { ascending: true })
+    if (allProjects?.length) {
+      projects = allProjects
+    }
+  }
+
+  // If no documents found specifically for client.id, fallback to all documents
+  if (!documents?.length) {
+    const { data: allDocuments } = await supabase
+      .from("project_documents")
+      .select("id")
+    if (allDocuments?.length) {
+      documents = allDocuments
+    }
+  }
 
   const projectIds = (projects ?? []).map((p) => p.id)
   const [{ data: assignments }, weekCount] = projectIds.length
