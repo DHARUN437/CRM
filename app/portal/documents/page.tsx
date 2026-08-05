@@ -16,6 +16,11 @@ import { formatBytes } from "@/lib/portal-types"
 
 import { NoClientNotice } from "@/components/portal/no-client-notice"
 
+import {
+  getPortalProjects,
+  getPortalDocuments,
+} from "@/lib/supabase/portal-data"
+
 export const dynamic = "force-dynamic"
 
 export default async function PortalDocumentsPage() {
@@ -23,19 +28,13 @@ export default async function PortalDocumentsPage() {
   const client = await getActiveClient(supabase)
   if (!client) redirect("/portal/login")
 
-  const { data: projects } = await supabase
-    .from("projects")
-    .select("id, name")
-    .eq("client_id", client.id)
-
-  const { data: documents } = await supabase
-    .from("project_documents")
-    .select("*, projects(name)")
-    .eq("client_id", client.id)
-    .order("created_at", { ascending: false })
+  const [projects, documents] = await Promise.all([
+    getPortalProjects(supabase, client.id),
+    getPortalDocuments(supabase, client.id),
+  ])
 
   const projectName = (doc: { project_id: string }) =>
-    projects?.find((p) => p.id === doc.project_id)?.name ?? "Unknown project"
+    projects.find((p) => p.id === doc.project_id)?.name ?? "Project"
 
   return (
     <div className="flex flex-col gap-6">

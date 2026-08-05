@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, Loader2, Receipt } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -15,15 +15,21 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 
+interface ClientItem {
+  id: string
+  name: string
+  company: string | null
+}
+
 interface CreateInvoiceDialogProps {
-  clients: { id: string; name: string; company: string | null }[]
+  clients?: ClientItem[]
   projects?: { id: string; name: string; client_id: string }[]
   presetClientId?: string
   presetProjectId?: string
 }
 
 export function CreateInvoiceDialog({
-  clients,
+  clients = [],
   projects = [],
   presetClientId,
   presetProjectId,
@@ -31,8 +37,9 @@ export function CreateInvoiceDialog({
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [clientList, setClientList] = useState<ClientItem[]>(clients)
 
-  const [clientId, setClientId] = useState(presetClientId || clients[0]?.id || "")
+  const [clientId, setClientId] = useState(presetClientId || (clients[0]?.id ?? ""))
   const [projectId, setProjectId] = useState(presetProjectId || "")
   const [amount, setAmount] = useState("")
   const [tax, setTax] = useState("0")
@@ -41,12 +48,34 @@ export function CreateInvoiceDialog({
   const [notes, setNotes] = useState("")
   const [error, setError] = useState<string | null>(null)
 
+  // Fetch clients if list is empty or modal opens
+  useEffect(() => {
+    if (clients.length > 0) {
+      setClientList(clients)
+      if (!clientId && !presetClientId) {
+        setClientId(clients[0].id)
+      }
+    } else {
+      fetch("/api/clients")
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            setClientList(data)
+            if (!clientId && !presetClientId) {
+              setClientId(data[0].id)
+            }
+          }
+        })
+        .catch((err) => console.error("Error fetching clients for select:", err))
+    }
+  }, [clients, open, clientId, presetClientId])
+
   const filteredProjects = projects.filter((p) => p.client_id === clientId)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!clientId || !amount || !dueDate) {
-      setError("Please fill in all required fields.")
+      setError("Please fill in all required fields (Client, Amount, Due Date).")
       return
     }
 
@@ -136,10 +165,11 @@ export function CreateInvoiceDialog({
                   setClientId(e.target.value)
                   setProjectId("")
                 }}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
               >
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
+                {!clientList.length && <option value="">Loading clients...</option>}
+                {clientList.map((c) => (
+                  <option key={c.id} value={c.id} className="bg-popover text-popover-foreground">
                     {c.company ? `${c.company} (${c.name})` : c.name}
                   </option>
                 ))}
@@ -153,11 +183,13 @@ export function CreateInvoiceDialog({
               <select
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/50"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/50"
               >
-                <option value="">No Project (General Invoice)</option>
+                <option value="" className="bg-popover text-popover-foreground">
+                  No Project (General Invoice)
+                </option>
                 {filteredProjects.map((p) => (
-                  <option key={p.id} value={p.id}>
+                  <option key={p.id} value={p.id} className="bg-popover text-popover-foreground">
                     {p.name}
                   </option>
                 ))}

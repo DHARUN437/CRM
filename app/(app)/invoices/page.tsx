@@ -7,6 +7,8 @@ import { CreateInvoiceDialog } from "@/components/invoices/create-invoice-dialog
 import { Receipt } from "lucide-react"
 import { type ClientPaymentRow, type Invoice } from "@/lib/portal-types"
 
+import { getClientsForSelect } from "@/lib/clients"
+
 export const dynamic = "force-dynamic"
 
 export default async function InvoicesPage() {
@@ -18,7 +20,7 @@ export default async function InvoicesPage() {
 
   const [
     { data: invoices },
-    { data: clients },
+    clients,
     { data: projects },
     { data: paymentRows },
   ] = await Promise.all([
@@ -26,7 +28,7 @@ export default async function InvoicesPage() {
       .from("invoices")
       .select("*")
       .order("created_at", { ascending: false }),
-    supabase.from("clients").select("id, name, company"),
+    getClientsForSelect(),
     supabase.from("projects").select("id, name, client_id"),
     supabase
       .from("invoice_payments")

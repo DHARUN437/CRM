@@ -14,6 +14,12 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { FolderKanban, FileUp, MessageSquareText, CheckCircle2 } from "lucide-react"
 
+import {
+  getPortalProjects,
+  getPortalDocuments,
+  getPortalAssignments,
+} from "@/lib/supabase/portal-data"
+
 export const dynamic = "force-dynamic"
 
 export default async function PortalOverviewPage() {
@@ -21,63 +27,16 @@ export default async function PortalOverviewPage() {
   const client = await getActiveClient(supabase)
   if (!client) redirect("/portal/login")
 
-  let [{ data: projects }, { data: documents }] = await Promise.all([
-    supabase
-      .from("projects")
-      .select("*")
-      .eq("client_id", client.id)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("project_documents")
-      .select("id")
-      .eq("client_id", client.id),
+  const [projects, documents] = await Promise.all([
+    getPortalProjects(supabase, client.id),
+    getPortalDocuments(supabase, client.id),
   ])
 
-  // If no projects found specifically for client.id, fallback to all projects
-  if (!projects?.length) {
-    const { data: allProjects } = await supabase
-      .from("projects")
-      .select("*")
-      .order("created_at", { ascending: true })
-    if (allProjects?.length) {
-      projects = allProjects
-    }
-  }
-
-  // If no documents found specifically for client.id, fallback to all documents
-  if (!documents?.length) {
-    const { data: allDocuments } = await supabase
-      .from("project_documents")
-      .select("id")
-    if (allDocuments?.length) {
-      documents = allDocuments
-    }
-  }
-
-  const projectIds = (projects ?? []).map((p) => p.id)
-  const [{ data: assignments }, weekCount] = projectIds.length
-    ? await Promise.all([
-        supabase
-          .from("project_assignments")
-          .select("project_id, team_members(name)")
-          .in("project_id", projectIds),
-        fetchWeekMessageCount(supabase, projectIds),
-      ])
-    : [{ data: [] }, 0]
-
-  const teams = new Map<string, { name: string }[]>()
-  for (const a of assignments ?? []) {
-    const raw = (a as unknown as { project_id: string; team_members: { name: string } | { name: string }[] | null }).team_members
-    if (!raw) continue
-    const members = Array.isArray(raw) ? raw : [raw]
-    const list = teams.get(a.project_id) ?? []
-    for (const m of members) {
-      if (m && typeof m === "object" && "name" in m && m.name) {
-        list.push({ name: String(m.name) })
-      }
-    }
-    teams.set(a.project_id, list)
-  }
+  const projectIds = projects.map((p) => p.id)
+  const [teams, weekCount] = await Promise.all([
+    getPortalAssignments(supabase, projectIds),
+    fetchWeekMessageCount(supabase, projectIds),
+  ])
 
   const myMessages = weekCount
 

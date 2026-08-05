@@ -6,6 +6,8 @@ import { PortalInvoices } from "@/components/portal/portal-invoices"
 
 import { NoClientNotice } from "@/components/portal/no-client-notice"
 
+import { getPortalInvoices } from "@/lib/supabase/portal-data"
+
 export const dynamic = "force-dynamic"
 
 export default async function ClientInvoicesPage() {
@@ -13,7 +15,7 @@ export default async function ClientInvoicesPage() {
   const client = await getActiveClient(supabase)
   if (!client) redirect("/portal/login")
 
-  const invoices = await getInvoicesForClient(client.id)
+  const invoices = await getPortalInvoices(supabase, client.id)
 
   return (
     <div className="flex flex-col gap-6">

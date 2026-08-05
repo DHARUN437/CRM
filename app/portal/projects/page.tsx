@@ -13,6 +13,11 @@ import {
 } from "@/components/ui/card"
 import { FolderKanban } from "lucide-react"
 
+import {
+  getPortalProjects,
+  getPortalAssignments,
+} from "@/lib/supabase/portal-data"
+
 export const dynamic = "force-dynamic"
 
 export default async function PortalProjectsPage() {
@@ -20,44 +25,9 @@ export default async function PortalProjectsPage() {
   const client = await getActiveClient(supabase)
   if (!client) redirect("/portal/login")
 
-  let { data: projects } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("client_id", client.id)
-    .order("created_at", { ascending: true })
-
-  if (!projects?.length) {
-    const { data: allProjects } = await supabase
-      .from("projects")
-      .select("*")
-      .order("created_at", { ascending: true })
-    if (allProjects?.length) {
-      projects = allProjects
-    }
-  }
-
-  const projectIds = (projects ?? []).map((p) => p.id)
-
-  const { data: assignments } = projectIds.length
-    ? await supabase
-        .from("project_assignments")
-        .select("project_id, team_members(name)")
-        .in("project_id", projectIds)
-    : { data: [] }
-
-  const teams = new Map<string, { name: string }[]>()
-  for (const a of assignments ?? []) {
-    const raw = (a as unknown as { project_id: string; team_members: { name: string } | { name: string }[] | null }).team_members
-    if (!raw) continue
-    const members = Array.isArray(raw) ? raw : [raw]
-    const list = teams.get(a.project_id) ?? []
-    for (const m of members) {
-      if (m && typeof m === "object" && "name" in m && m.name) {
-        list.push({ name: String(m.name) })
-      }
-    }
-    teams.set(a.project_id, list)
-  }
+  const projects = await getPortalProjects(supabase, client.id)
+  const projectIds = projects.map((p) => p.id)
+  const teams = await getPortalAssignments(supabase, projectIds)
 
   const active = (projects ?? []).filter((p) => p.status !== "completed").length
 
