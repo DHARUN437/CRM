@@ -81,16 +81,20 @@ export function DocumentsView({ documents }: DocumentsViewProps) {
   async function getSignedUrl(doc: TeamDocument, download: boolean) {
     setBusyId(doc.id)
     setAction(download ? "download" : "open")
-    const supabase = createClient()
-    const { data, error } = await supabase.storage
-      .from("client-documents")
-      .createSignedUrl(doc.file_path, 3600, download ? { download: doc.name } : undefined)
-    setBusyId(null)
-    if (error) {
-      alert("Could not access this document. Please try again.")
-      return
+    try {
+      const res = await fetch(
+        `/api/documents/download?path=${encodeURIComponent(doc.file_path)}&name=${encodeURIComponent(doc.name)}&download=${download}`
+      )
+      const data = await res.json()
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Could not access document")
+      }
+      window.open(data.url, "_blank")
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Could not access this document. Please try again.")
+    } finally {
+      setBusyId(null)
     }
-    window.open(data.signedUrl, "_blank")
   }
 
   return (
