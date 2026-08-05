@@ -15,32 +15,41 @@ export function PendingRequestsBadge({
   const [count, setCount] = useState(initialCount)
 
   useEffect(() => {
+    setCount(initialCount)
+  }, [initialCount])
+
+  useEffect(() => {
     const supabase = createClient()
 
     async function refresh() {
-      const { data: projects } = await supabase
-        .from("projects")
-        .select("id")
-        .eq("client_id", clientId)
-      if (!projects?.length) {
-        setCount(0)
-        return
+      try {
+        const { data: projects } = await supabase
+          .from("projects")
+          .select("id")
+          .eq("client_id", clientId)
+
+        if (!projects || projects.length === 0) {
+          setCount(0)
+          return
+        }
+
+        const projectIds = projects.map((p) => p.id)
+        const { count: pending } = await supabase
+          .from("document_requests")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "pending")
+          .in("project_id", projectIds)
+
+        setCount(pending ?? 0)
+      } catch (err) {
+        console.error("Error refreshing pending requests count:", err)
       }
-      const { count: pending } = await supabase
-        .from("document_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "pending")
-        .in(
-          "project_id",
-          projects.map((p) => p.id)
-        )
-      setCount(pending ?? 0)
     }
 
-    void refresh()
-
+    // Build realtime channel chain cleanly before calling subscribe()
+    const channelName = `pending-req-${clientId.slice(0, 8)}`
     const channel = supabase
-      .channel("pending-requests-badge")
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
@@ -48,9 +57,12 @@ export function PendingRequestsBadge({
           schema: "public",
           table: "document_requests",
         },
-        () => void refresh()
+        () => {
+          void refresh()
+        }
       )
-      .subscribe()
+
+    channel.subscribe()
 
     return () => {
       supabase.removeChannel(channel)
