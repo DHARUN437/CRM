@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Bell, Check, Info, FileQuestion, Upload, CheckSquare, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { createClient } from "@/lib/supabase/client"
 import { type NotificationItem } from "@/lib/portal-types"
 
 const TYPE_ICONS = {
@@ -36,13 +37,35 @@ export function NotificationsBell() {
     fetchNotifications().then((items) => {
       if (!cancelled) setNotifications(items)
     })
+
+    // Enable Supabase Realtime WebSocket subscription for instant notification popups
+    const supabase = createClient()
+    const channel = supabase
+      .channel("user-notifications")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+        },
+        () => {
+          fetchNotifications().then((items) => {
+            if (!cancelled) setNotifications(items)
+          })
+        }
+      )
+      .subscribe()
+
     const interval = setInterval(() => {
       fetchNotifications().then((items) => {
         if (!cancelled) setNotifications(items)
       })
-    }, 30000)
+    }, 15000)
+
     return () => {
       cancelled = true
+      supabase.removeChannel(channel)
       clearInterval(interval)
     }
   }, [])

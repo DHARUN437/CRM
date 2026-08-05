@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { useRouter } from "next/navigation"
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import {
   AlertTriangle,
   CheckCircle2,
@@ -326,10 +326,40 @@ function RequestItem({
 export function DocumentRequests({
   clientId,
   projectId,
-  requests,
+  requests: initialRequests,
 }: DocumentRequestsProps) {
-  const pending = requests.filter((r) => r.status === "pending")
-  const fulfilled = requests.filter((r) => r.status === "fulfilled")
+  const router = useRouter()
+  const [requestsList, setRequestsList] = useState<PortalRequest[]>(initialRequests)
+
+  useEffect(() => {
+    setRequestsList(initialRequests)
+  }, [initialRequests])
+
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`document-requests-${projectId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "document_requests",
+          filter: `project_id=eq.${projectId}`,
+        },
+        () => {
+          router.refresh()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [projectId, router])
+
+  const pending = requestsList.filter((r) => r.status === "pending")
+  const fulfilled = requestsList.filter((r) => r.status === "fulfilled")
 
   return (
     <Card>
@@ -349,7 +379,7 @@ export function DocumentRequests({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
-        {!requests.length ? (
+        {!requestsList.length ? (
           <p className="text-sm text-muted-foreground">
             Nothing requested right now — you&apos;re all caught up. ✅
           </p>

@@ -16,6 +16,10 @@ import { RecordPaymentDialog } from "@/components/invoices/record-payment-dialog
 import { PaymentHistoryDialog } from "@/components/invoices/payment-history-dialog"
 import { InvoiceRowActions } from "@/components/invoices/invoice-row-actions"
 
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
+
 export function InvoicesList({
   invoices,
   isAdmin = false,
@@ -25,6 +29,28 @@ export function InvoicesList({
   isAdmin?: boolean
   paymentsByClient?: Map<string, ClientPaymentRow[]>
 }) {
+  const router = useRouter()
+
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel("live-invoices")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "invoices" },
+        () => router.refresh()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "invoice_payments" },
+        () => router.refresh()
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [router])
   function handleExport() {
     exportToCSV(
       "Invoices",

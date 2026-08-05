@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import {
@@ -29,6 +29,49 @@ export function TaskBoard({ tasks: initialTasks }: TaskBoardProps) {
   const [dragId, setDragId] = useState<string | null>(null)
   const [overColumn, setOverColumn] = useState<TaskStatus | null>(null)
 
+  useEffect(() => {
+    setTasks(initialTasks)
+  }, [initialTasks])
+
+  // Real-time WebSocket subscription for instant task updates across clients and workers
+  useEffect(() => {
+    const supabase = createClient()
+    const projectId = initialTasks[0]?.project_id
+
+    const channel = supabase
+      .channel(`project-tasks-${projectId || "global"}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "project_tasks",
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            const newTask = payload.new as unknown as ProjectTask
+            setTasks((prev) => {
+              if (prev.some((t) => t.id === newTask.id)) return prev
+              return [...prev, newTask]
+            })
+          } else if (payload.eventType === "UPDATE") {
+            const updatedTask = payload.new as unknown as ProjectTask
+            setTasks((prev) =>
+              prev.map((t) => (t.id === updatedTask.id ? { ...t, ...updatedTask } : t))
+            )
+          } else if (payload.eventType === "DELETE") {
+            const deletedId = (payload.old as { id: string }).id
+            setTasks((prev) => prev.filter((t) => t.id !== deletedId))
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [initialTasks])
+
   const byStatus = useMemo(() => {
     const map: Record<TaskStatus, ProjectTask[]> = {
       todo: [],
@@ -36,7 +79,13 @@ export function TaskBoard({ tasks: initialTasks }: TaskBoardProps) {
       review: [],
       done: [],
     }
-    for (const t of tasks) map[t.status].push(t)
+    for (const t of tasks) {
+      if (map[t.status]) {
+        map[t.status].push(t)
+      } else {
+        map.todo.push(t)
+      }
+    }
     return map
   }, [tasks])
 
@@ -76,7 +125,7 @@ export function TaskBoard({ tasks: initialTasks }: TaskBoardProps) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-4">
       {TASK_COLUMNS.map((col) => {
-        const colTasks = byStatus[col.id]
+        const colTasks = byStatus[col.id] || []
         return (
           <section
             key={col.id}
@@ -127,7 +176,7 @@ function TaskCard({
   dragging: boolean
   onDragStart: (e: React.DragEvent, id: string) => void
 }) {
-  const priorityMeta = TASK_PRIORITY_META[task.priority]
+  const priorityMeta = TASK_PRIORITY_META[task.priority] || TASK_PRIORITY_META.medium
   return (
     <article
       draggable
