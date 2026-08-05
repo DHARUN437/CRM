@@ -84,36 +84,29 @@ export function UploadDocuments({
       setFiles([...updated])
 
       const { file: optimizedFile } = await optimizeFileForUpload(item.file)
-      const safeName = optimizedFile.name.replace(/[^a-zA-Z0-9._-]/g, "-")
-      const path = `${clientId}/${projectId}/${crypto.randomUUID()}-${safeName}`
+      const formData = new FormData()
+      formData.append("file", optimizedFile)
+      formData.append("projectId", projectId)
+      if (clientId) formData.append("clientId", clientId)
 
-      const { error: uploadError } = await supabase.storage
-        .from("client-documents")
-        .upload(path, optimizedFile, {
-          ...CDN_UPLOAD_OPTIONS,
-          contentType: optimizedFile.type || undefined,
+      try {
+        const res = await fetch("/api/documents/upload", {
+          method: "POST",
+          body: formData,
         })
 
-      if (uploadError) {
-        updated[i] = { ...item, status: "error", error: uploadError.message }
-        setFiles([...updated])
-        continue
-      }
+        if (!res.ok) {
+          const resData = await res.json()
+          throw new Error(resData.error || "Upload failed")
+        }
 
-      const { error: rowError } = await supabase.from("project_documents").insert({
-        project_id: projectId,
-        client_id: clientId,
-        name: optimizedFile.name,
-        file_path: path,
-        file_type: optimizedFile.type || "application/octet-stream",
-        file_size: optimizedFile.size,
-        uploaded_by: user?.id ?? null,
-      })
-
-      if (rowError) {
-        updated[i] = { ...item, status: "error", error: rowError.message }
-      } else {
         updated[i] = { ...item, status: "done" }
+      } catch (err: unknown) {
+        updated[i] = {
+          ...item,
+          status: "error",
+          error: err instanceof Error ? err.message : "Upload failed",
+        }
       }
       setFiles([...updated])
     }
