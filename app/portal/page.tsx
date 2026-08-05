@@ -23,6 +23,18 @@ export default async function PortalOverviewPage() {
   if (!client) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect("/portal/login")
+
+    // Check if logged in user is an agency admin / staff member
+    const { data: member } = await supabase
+      .from("team_members")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle()
+
+    if (member) {
+      redirect("/dashboard")
+    }
+
     return <NoClientNotice email={user.email} />
   }
 

@@ -1,5 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card"
-import { AlertCircle } from "lucide-react"
+import { buttonVariants } from "@/components/ui/button"
+import { AlertCircle, LayoutDashboard, LogOut } from "lucide-react"
+import Link from "next/link"
 
 export function NoClientNotice({ email }: { email?: string }) {
   return (
@@ -11,11 +13,23 @@ export function NoClientNotice({ email }: { email?: string }) {
         <div className="flex flex-col gap-1.5 max-w-md">
           <h3 className="text-lg font-semibold">Client Profile Not Found</h3>
           <p className="text-sm text-muted-foreground">
-            {email ? `Your account (${email})` : "Your account"} is signed in, but has not been linked to a client profile in the system.
+            {email ? `Your account (${email})` : "Your account"} is currently logged in, but is not linked to a Client Profile in the portal database.
           </p>
           <p className="text-xs text-muted-foreground">
-            Please ask your agency administrator to link your email to your client account in the CRM admin dashboard.
+            If you are an agency administrator or staff member, please access your Admin CRM Dashboard below.
           </p>
+        </div>
+
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
+          <Link href="/dashboard" className={buttonVariants({ variant: "default", className: "gap-2" })}>
+            <LayoutDashboard className="size-4" />
+            Go to Admin CRM Dashboard
+          </Link>
+
+          <Link href="/portal/login" className={buttonVariants({ variant: "outline", className: "gap-2" })}>
+            <LogOut className="size-4" />
+            Sign in with Client Account
+          </Link>
         </div>
       </CardContent>
     </Card>
