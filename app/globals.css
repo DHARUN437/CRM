@@ -157,6 +157,18 @@
   -webkit-backdrop-filter: blur(20px);
 }
 
+@utility glass-card {
+  background: color-mix(in oklch, var(--card) 75%, transparent);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid color-mix(in oklch, var(--foreground) 10%, transparent);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 1px inset rgba(255, 255, 255, 0.1);
+}
+
+@utility glow-purple {
+  box-shadow: 0 0 40px -10px oklch(0.55 0.25 274 / 40%);
+}
+
 @keyframes agencyos-fade-up {
   from {
     opacity: 0;
@@ -168,8 +180,41 @@
   }
 }
 
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(1deg);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.08);
+  }
+}
+
 .animate-fade-up {
   animation: agencyos-fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-float-slow {
+  animation: float-slow 7s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 8s ease-in-out infinite;
+}
+
+.bg-grid-pattern {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 /* subtle custom scrollbars */
@@ -204,4 +249,5 @@
 [role="dialog"] {
   max-width: calc(100vw - 1.25rem) !important;
 }
+
 
