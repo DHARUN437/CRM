@@ -17,7 +17,7 @@ export default async function PortalLayout({ children }: { children: React.React
         clientId={client?.id ?? null}
         pendingRequestCount={pendingRequestCount}
       />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-3.5 py-5 sm:px-6 sm:py-8">
         {children}
       </main>
       <footer className="border-t border-foreground/10 py-4">

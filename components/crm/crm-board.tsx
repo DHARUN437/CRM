@@ -46,7 +46,7 @@ export function CrmBoard({ leads, onStageChange }: CrmBoardProps) {
   }
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
+    <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 touch-scroll snap-x snap-mandatory">
       {leadStages.map((stage) => {
         const stageLeads = byStage[stage.id]
         const total = stageLeads.reduce((s, l) => s + l.value, 0)
@@ -60,7 +60,7 @@ export function CrmBoard({ leads, onStageChange }: CrmBoardProps) {
             onDragLeave={() => setOverStage((s) => (s === stage.id ? null : s))}
             onDrop={() => handleDrop(stage.id)}
             className={cn(
-              "flex w-[300px] shrink-0 flex-col rounded-2xl border border-border/60 bg-muted/30 transition-colors",
+              "flex w-[84vw] sm:w-[300px] max-w-[300px] shrink-0 snap-start flex-col rounded-2xl border border-border/60 bg-muted/30 transition-colors",
               overStage === stage.id && "border-primary/50 bg-primary/5",
             )}
           >

@@ -178,10 +178,30 @@
   scrollbar-color: color-mix(in oklch, var(--foreground) 18%, transparent) transparent;
 }
 *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 *::-webkit-scrollbar-thumb {
   background: color-mix(in oklch, var(--foreground) 16%, transparent);
   border-radius: 9999px;
 }
+
+/* Mobile Fluid Responsive Utilities */
+@layer utilities {
+  .touch-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+  }
+  .touch-snap-start {
+    scroll-snap-align: start;
+  }
+  .touch-target {
+    min-height: 44px;
+  }
+}
+
+/* Fluid Dialog & Mobile Overrides */
+[role="dialog"] {
+  max-width: calc(100vw - 1.25rem) !important;
+}
+

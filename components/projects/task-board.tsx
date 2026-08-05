@@ -123,7 +123,7 @@ export function TaskBoard({ tasks: initialTasks }: TaskBoardProps) {
   }
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
+    <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 touch-scroll snap-x snap-mandatory">
       {TASK_COLUMNS.map((col) => {
         const colTasks = byStatus[col.id] || []
         return (
@@ -136,7 +136,7 @@ export function TaskBoard({ tasks: initialTasks }: TaskBoardProps) {
             onDragLeave={() => setOverColumn((s) => (s === col.id ? null : s))}
             onDrop={() => handleDrop(col.id)}
             className={cn(
-              "flex w-[280px] shrink-0 flex-col rounded-2xl border border-border/60 bg-muted/30 transition-colors",
+              "flex w-[82vw] sm:w-[280px] max-w-[280px] shrink-0 snap-start flex-col rounded-2xl border border-border/60 bg-muted/30 transition-colors",
               overColumn === col.id && "border-primary/50 bg-primary/5"
             )}
           >
