@@ -50,26 +50,34 @@ export function RequestFeatureDialog({
     setSaving(true)
     setError(null)
 
-    const supabase = createClient()
-    const { error: err } = await supabase.from("feature_requests").insert({
-      project_id: projectId,
-      client_id: clientId,
-      title: title.trim(),
-      description: description.trim() || null,
-      priority,
-    })
+    try {
+      const res = await fetch("/api/feature-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId,
+          clientId,
+          title: title.trim(),
+          description: description.trim() || undefined,
+          priority,
+        }),
+      })
 
-    setSaving(false)
-    if (err) {
-      setError(err.message)
-      return
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Failed to submit feature request")
+      }
+
+      setOpen(false)
+      setTitle("")
+      setDescription("")
+      setPriority("medium")
+      router.refresh()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to submit feature request")
+    } finally {
+      setSaving(false)
     }
-
-    setOpen(false)
-    setTitle("")
-    setDescription("")
-    setPriority("medium")
-    router.refresh()
   }
 
   return (

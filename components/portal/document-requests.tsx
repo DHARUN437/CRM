@@ -105,14 +105,19 @@ function RequestItem({
       return
     }
 
-    await supabase
-      .from("document_requests")
-      .update({
-        status: "fulfilled",
-        fulfilled_at: new Date().toISOString(),
-        linked_document_id: doc.id,
+    try {
+      await fetch("/api/document-requests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestId: request.id,
+          status: "fulfilled",
+          linkedDocumentId: doc.id,
+        }),
       })
-      .eq("id", request.id)
+    } catch (err) {
+      console.error("Error updating document request:", err)
+    }
 
     setBusy(false)
     router.refresh()
@@ -123,24 +128,29 @@ function RequestItem({
     setBusy(true)
     setError(null)
 
-    const supabase = createClient()
-    const { error: err } = await supabase
-      .from("document_requests")
-      .update({
-        status: "fulfilled",
-        fulfilled_at: new Date().toISOString(),
-        text_response: textReply.trim(),
+    try {
+      const res = await fetch("/api/document-requests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestId: request.id,
+          status: "fulfilled",
+          textResponse: textReply.trim(),
+        }),
       })
-      .eq("id", request.id)
 
-    setBusy(false)
-    if (err) {
-      setError(err.message)
-      return
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Failed to submit response")
+      }
+
+      setShowReply(false)
+      router.refresh()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to submit response")
+    } finally {
+      setBusy(false)
     }
-
-    setShowReply(false)
-    router.refresh()
   }
 
   const isFulfilled = request.status === "fulfilled"
