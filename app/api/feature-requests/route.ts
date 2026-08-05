@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     title: String(title).trim(),
     description: description ? String(description).trim() : null,
     priority,
-    status: "pending",
+    status: "open",
   }
 
   // 1. Try standard user client

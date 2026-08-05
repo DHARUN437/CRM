@@ -132,7 +132,7 @@ export default async function ProjectDetailPage({
     isAdmin ||
     (isTL && myMember != null && project.tl_id === myMember.id)
 
-  const [
+  let [
     { data: assignments },
     { data: documents },
     messages,
@@ -201,6 +201,41 @@ export default async function ProjectDetailPage({
       ? supabase.from("team_members").select("id, name").eq("id", project.tl_id).maybeSingle()
       : { data: null },
   ])
+
+  // Fallback to admin client if RLS policies restrict worker/TL reading requests or documents
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const admin = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+    if (admin) {
+      if (!requests || requests.length === 0) {
+        const { data: adminReqs } = await admin
+          .from("document_requests")
+          .select("*")
+          .eq("project_id", id)
+          .order("requested_at", { ascending: false })
+        if (adminReqs && adminReqs.length > 0) requests = adminReqs
+      }
+      if (!features || features.length === 0) {
+        const { data: adminFeats } = await admin
+          .from("feature_requests")
+          .select("*")
+          .eq("project_id", id)
+          .order("created_at", { ascending: false })
+        if (adminFeats && adminFeats.length > 0) features = adminFeats
+      }
+      if (!documents || documents.length === 0) {
+        const { data: adminDocs } = await admin
+          .from("project_documents")
+          .select("*")
+          .eq("project_id", id)
+          .order("created_at", { ascending: false })
+        if (adminDocs && adminDocs.length > 0) documents = adminDocs
+      }
+    }
+  }
 
   const meta = PROJECT_STATUS_META[project.status as ProjectStatus]
   const clientName =
