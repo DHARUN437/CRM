@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -10,6 +10,43 @@ import { currency, type Lead, type LeadStage } from "@/lib/crm"
 
 export function CrmDashboard({ initialLeads }: { initialLeads: Lead[] }) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads)
+
+  useEffect(() => {
+    setLeads(initialLeads)
+  }, [initialLeads])
+
+  // Instant WebSocket real-time subscription for leads table updates
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel("crm-leads")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "leads" },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            const newLead = payload.new as unknown as Lead
+            setLeads((prev) => {
+              if (prev.some((l) => l.id === newLead.id)) return prev
+              return [newLead, ...prev]
+            })
+          } else if (payload.eventType === "UPDATE") {
+            const updatedLead = payload.new as unknown as Lead
+            setLeads((prev) =>
+              prev.map((l) => (l.id === updatedLead.id ? { ...l, ...updatedLead } : l))
+            )
+          } else if (payload.eventType === "DELETE") {
+            const deletedId = (payload.old as { id: string }).id
+            setLeads((prev) => prev.filter((l) => l.id !== deletedId))
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
 
   async function handleStageChange(id: string, stage: LeadStage) {
     const previous = leads.find((l) => l.id === id)
