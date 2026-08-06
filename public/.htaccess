@@ -1,12 +1,15 @@
 # Apache Configuration for Next.js CRM Subdomain (lawngreen-alpaca-627630.hostingersite.com)
 
+# Disable Apache MultiViews content negotiation (prevents Hostinger from serving stale login.html on query strings)
+Options -MultiViews
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # 1. Explicitly route /login and /portal/login with query strings to index.html
-  RewriteRule ^login$ index.html [QSA,L]
-  RewriteRule ^portal/login$ index.html [QSA,L]
+  # 1. Explicitly route /login and /portal/login (with or without trailing slash or query params like ?next=...) to index.html
+  RewriteRule ^login/?$ index.html [QSA,L]
+  RewriteRule ^portal/login/?$ index.html [QSA,L]
 
   # 2. Do not rewrite static files or directories that exist (images, js, css, download/JoyCRM.apk)
   RewriteCond %{REQUEST_FILENAME} -f [OR]
