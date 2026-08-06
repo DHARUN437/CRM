@@ -1,22 +1,31 @@
-# Apache Configuration for Next.js CRM Subdomain (lawngreen-alpaca-627630.hostingersite.com)
+# Apache Configuration for Next.js Subdomain (lawngreen-alpaca-627630.hostingersite.com)
 
-# Disable Apache MultiViews content negotiation (prevents Hostinger from serving stale login.html on query strings)
+# Disable Apache MultiViews & UserDir negotiation (prevents Hostinger ~ tilde chunk 404s and stale login.html matches)
 Options -MultiViews
+<IfModule mod_userdir.c>
+  UserDir disabled
+</IfModule>
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # 1. Explicitly route /login and /portal/login (with or without trailing slash or query params like ?next=...) to index.html
+  # 1. DO NOT rewrite missing _next static assets to index.html (prevents MIME errors)
+  RewriteCond %{REQUEST_URI} ^/_next/ [OR]
+  RewriteCond %{REQUEST_URI} ^/download/
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^ - [R=404,L]
+
+  # 2. Explicitly route /login and /portal/login (with or without query strings like ?next=...) to index.html
   RewriteRule ^login/?$ index.html [QSA,L]
   RewriteRule ^portal/login/?$ index.html [QSA,L]
 
-  # 2. Do not rewrite static files or directories that exist (images, js, css, download/JoyCRM.apk)
+  # 3. Do not rewrite static files or directories that exist (images, js, css, download/JoyCRM.apk)
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # 3. Fallback to index.html for all client-side routing with Query String Append (QSA)
+  # 4. Fallback to index.html for page navigation routes with Query String Append (QSA)
   RewriteRule ^ index.html [QSA,L]
 </IfModule>
 
