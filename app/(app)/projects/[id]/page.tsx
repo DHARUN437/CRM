@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
-import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { getCurrentUser } from "@/lib/supabase/session"
 import { getClientsForSelect } from "@/lib/clients"
 import { ProjectStatusUpdater } from "@/components/projects/project-status"
@@ -65,25 +64,11 @@ export default async function ProjectDetailPage({
   const user = await getCurrentUser()
   if (!user) redirect("/login")
 
-  let { data: project } = await supabase
+  const { data: project } = await supabase
     .from("projects")
     .select("*, clients(name, company)")
     .eq("id", id)
     .maybeSingle()
-
-  if (!project && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const admin = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
-    const { data: adminProject } = await admin
-      .from("projects")
-      .select("*, clients(name, company)")
-      .eq("id", id)
-      .maybeSingle()
-    project = adminProject
-  }
 
   if (!project) notFound()
 
@@ -129,7 +114,7 @@ export default async function ProjectDetailPage({
     isAdmin ||
     (isTL && myMember != null && project.tl_id === myMember.id)
 
-  let [
+  const [
     { data: assignments },
     { data: documents },
     { data: workers },
@@ -197,41 +182,6 @@ export default async function ProjectDetailPage({
       : { data: null },
   ])
 
-  // Fallback to admin client if RLS policies restrict worker/TL reading requests or documents
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const admin = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
-    if (admin) {
-      if (!requests || requests.length === 0) {
-        const { data: adminReqs } = await admin
-          .from("document_requests")
-          .select("*")
-          .eq("project_id", id)
-          .order("requested_at", { ascending: false })
-        if (adminReqs && adminReqs.length > 0) requests = adminReqs
-      }
-      if (!features || features.length === 0) {
-        const { data: adminFeats } = await admin
-          .from("feature_requests")
-          .select("*")
-          .eq("project_id", id)
-          .order("created_at", { ascending: false })
-        if (adminFeats && adminFeats.length > 0) features = adminFeats
-      }
-      if (!documents || documents.length === 0) {
-        const { data: adminDocs } = await admin
-          .from("project_documents")
-          .select("*")
-          .eq("project_id", id)
-          .order("created_at", { ascending: false })
-        if (adminDocs && adminDocs.length > 0) documents = adminDocs
-      }
-    }
-  }
-
   const meta = PROJECT_STATUS_META[project.status as ProjectStatus]
   const clientName =
     project.clients?.company ?? project.clients?.name ?? "Client"
@@ -262,8 +212,6 @@ export default async function ProjectDetailPage({
     priority: t.priority as ProjectTask["priority"],
     assignee_name: t.team_members?.name ?? null,
   }))
-
-  const myName = user.name ?? user.email.split("@")[0]
 
   const invoiceRows = (invoices ?? []) as unknown as Invoice[]
   const invoiceIds = new Set(invoiceRows.map((inv) => inv.id))

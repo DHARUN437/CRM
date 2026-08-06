@@ -1,15 +1,5 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { createClient as createAdminClient } from "@supabase/supabase-js"
-
-function getAdminClient() {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
 
 export async function PATCH(request: Request) {
   const supabase = await createClient()
@@ -40,28 +30,14 @@ export async function PATCH(request: Request) {
     updatePayload.linked_document_id = linkedDocumentId
   }
 
-  // 1. Try standard client
-  let { data, error } = await supabase
+  // RLS gates the update: clients may only fulfill their own project's requests
+  // (clients_requests_update), staff may update any (team_requests_all).
+  const { data, error } = await supabase
     .from("document_requests")
     .update(updatePayload)
     .eq("id", requestId)
     .select()
     .single()
-
-  // 2. Fallback to admin client if RLS policy recursion occurs
-  if (error && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const admin = getAdminClient()
-    if (admin) {
-      const adminRes = await admin
-        .from("document_requests")
-        .update(updatePayload)
-        .eq("id", requestId)
-        .select()
-        .single()
-      data = adminRes.data
-      error = adminRes.error
-    }
-  }
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

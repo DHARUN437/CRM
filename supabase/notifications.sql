@@ -23,10 +23,14 @@ create policy "notifications_own_all" on public.notifications
   using ( user_id = auth.uid() )
   with check ( user_id = auth.uid() );
 
--- Team can insert notifications for any user (e.g. notify clients)
+-- Team can insert notifications for any user (e.g. notify clients).
+-- SECURITY: the old version used  WITH CHECK (true)  which let ANY authenticated
+-- user (including clients) write notifications into any user's inbox. Notifications
+-- are only written by the SECURITY DEFINER triggers in request-notifications.sql,
+-- which bypass RLS, so restricting this to staff is safe.
 drop policy if exists "notifications_team_insert" on public.notifications;
 create policy "notifications_team_insert" on public.notifications
   for insert to authenticated
-  with check ( true );
+  with check ( public.is_team() );
 
 create index if not exists idx_notifications_user_read on public.notifications (user_id, read);

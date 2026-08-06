@@ -16,7 +16,7 @@ import { RecordPaymentDialog } from "@/components/invoices/record-payment-dialog
 import { PaymentHistoryDialog } from "@/components/invoices/payment-history-dialog"
 import { InvoiceRowActions } from "@/components/invoices/invoice-row-actions"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 
@@ -30,24 +30,37 @@ export function InvoicesList({
   paymentsByClient?: Map<string, ClientPaymentRow[]>
 }) {
   const router = useRouter()
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
+
+    // Coalesce bursts of payment events (payment record + invoice update) into
+    // a single router.refresh().
+    const requestRefresh = () => {
+      if (refreshTimer.current) return
+      refreshTimer.current = setTimeout(() => {
+        refreshTimer.current = null
+        router.refresh()
+      }, 500)
+    }
+
     const channel = supabase
       .channel("live-invoices")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "invoices" },
-        () => router.refresh()
+        requestRefresh
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "invoice_payments" },
-        () => router.refresh()
+        requestRefresh
       )
       .subscribe()
 
     return () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current)
       supabase.removeChannel(channel)
     }
   }, [router])

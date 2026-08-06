@@ -38,9 +38,17 @@ export function LoginForm() {
     
     setTimeout(() => {
       const searchParams = new URLSearchParams(window.location.search)
-      const nextTarget = searchParams.get("next")
+      let nextTarget = searchParams.get("next")
 
       if (nextTarget) {
+        try {
+          nextTarget = decodeURIComponent(nextTarget)
+          if (!nextTarget.startsWith("/")) {
+            nextTarget = user?.app_metadata?.role === "client" ? "/portal" : "/dashboard"
+          }
+        } catch {
+          nextTarget = user?.app_metadata?.role === "client" ? "/portal" : "/dashboard"
+        }
         router.push(nextTarget)
       } else if (user?.app_metadata?.role === "client") {
         router.push("/portal")

@@ -1,15 +1,5 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { createClient as createAdminClient } from "@supabase/supabase-js"
-
-function getAdminClient() {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
 
 export async function GET(request: Request) {
   try {
@@ -31,10 +21,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const admin = getAdminClient()
-    const clientToUse = admin || supabase
-
-    const { data, error } = await clientToUse.storage
+    // Uses the signed-in user's session, so the storage RLS policies
+    // (team_bucket_all / clients_bucket_select / worker_bucket_select) decide
+    // whether this path is actually readable. The old version fell back to the
+    // service-role client, letting any authenticated user mint signed URLs for
+    // ANY file.
+    const { data, error } = await supabase.storage
       .from("client-documents")
       .createSignedUrl(filePath, 3600, isDownload ? { download: fileName } : undefined)
 

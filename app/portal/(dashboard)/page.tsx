@@ -17,6 +17,18 @@ import { EmptyState } from "@/components/portal/empty-state"
 
 export const dynamic = "force-dynamic"
 
+function formatTimeAgo(iso: string) {
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diffMs / 60000)
+  if (mins < 1) return { label: "Just now", sort: diffMs }
+  if (mins < 60) return { label: `${mins}m ago`, sort: diffMs }
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return { label: `${hrs}h ago`, sort: diffMs }
+  const days = Math.floor(hrs / 24)
+  if (days < 7) return { label: `${days}d ago`, sort: diffMs }
+  return { label: new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" }), sort: diffMs }
+}
+
 export default async function PortalOverviewPage() {
   const supabase = await createClient()
   const client = await getActiveClient(supabase)
@@ -28,12 +40,68 @@ export default async function PortalOverviewPage() {
   ])
 
   const projectIds = projects.map((p) => p.id)
-  const [teams, weekCount] = await Promise.all([
-    getPortalAssignments(supabase, projectIds),
-    fetchWeekMessageCount(supabase, projectIds),
-  ])
+  const noProjectIds = ["00000000-0000-0000-0000-000000000000"]
+  const scopedIds = projectIds.length ? projectIds : noProjectIds
+
+  const [teams, weekCount, { data: pendingRequests }, { data: recentDocs }, { data: recentTasks }] =
+    await Promise.all([
+      getPortalAssignments(supabase, projectIds),
+      fetchWeekMessageCount(supabase, projectIds),
+      supabase
+        .from("document_requests")
+        .select("id")
+        .in("project_id", scopedIds)
+        .eq("status", "pending"),
+      supabase
+        .from("project_documents")
+        .select("id, name, created_at, project_id, projects(name)")
+        .in("project_id", scopedIds)
+        .order("created_at", { ascending: false })
+        .limit(4),
+      supabase
+        .from("project_tasks")
+        .select("id, title, status, updated_at, project_id, projects(name)")
+        .in("project_id", scopedIds)
+        .order("updated_at", { ascending: false })
+        .limit(4),
+    ])
 
   const myMessages = weekCount
+  const pendingApprovals = pendingRequests?.length ?? 0
+
+  const activityFeed = [
+    ...(recentDocs ?? []).map((d) => {
+      const t = formatTimeAgo(d.created_at)
+      return {
+        id: `doc-${d.id}`,
+        title: "Document Uploaded",
+        project: (d.projects as unknown as { name: string } | null)?.name ?? "Project",
+        time: t.label,
+        timeSort: t.sort,
+        type: "upload",
+      }
+    }),
+    ...(recentTasks ?? []).map((t) => {
+      const ft = formatTimeAgo(t.updated_at)
+      return {
+        id: `task-${t.id}`,
+        title: `Task ${t.status.replace(/_/g, " ")}: ${t.title}`,
+        project: (t.projects as unknown as { name: string } | null)?.name ?? "Project",
+        time: ft.label,
+        timeSort: ft.sort,
+        type: "task",
+      }
+    }),
+  ]
+    .sort((a, b) => (a.timeSort > b.timeSort ? 1 : -1))
+    .slice(0, 6)
+    .map((item) => ({
+      id: item.id,
+      title: item.title,
+      project: item.project,
+      time: item.time,
+      type: item.type,
+    }))
 
   const stats = [
     {
@@ -52,10 +120,10 @@ export default async function PortalOverviewPage() {
     },
     {
       label: "Pending Approvals",
-      value: 1, // Mocked for design
+      value: pendingApprovals,
       icon: <CheckCircle2 className="size-6" />,
       trend: "down" as const,
-      trendValue: "2",
+      trendValue: pendingApprovals > 0 ? `${pendingApprovals}` : "0",
     },
     {
       label: "New Messages",
@@ -76,7 +144,7 @@ export default async function PortalOverviewPage() {
           <span className="text-primary">{client.company || client.name}</span>
         </h1>
         <p className="text-lg text-muted-foreground mt-1">
-          Here's your project workspace.
+          Here&apos;s your project workspace.
         </p>
         <hr className="w-full border-t border-border mt-6 mb-2" />
       </section>
@@ -115,7 +183,7 @@ export default async function PortalOverviewPage() {
         </section>
 
         <section className="flex flex-col gap-6">
-          <ActivityFeed />
+          <ActivityFeed activities={activityFeed} />
         </section>
       </div>
     </div>

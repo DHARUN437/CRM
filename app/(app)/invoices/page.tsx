@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/supabase/session"
-import { hasPermission } from "@/lib/permissions"
 import { InvoicesList } from "@/components/invoices/invoices-list"
 import { CreateInvoiceDialog } from "@/components/invoices/create-invoice-dialog"
 import { Receipt } from "lucide-react"
@@ -13,7 +12,10 @@ export const dynamic = "force-dynamic"
 export default async function InvoicesPage() {
   const user = await getCurrentUser()
   if (!user) redirect("/login")
-  if (!hasPermission(user.role, "clients.view")) redirect("/dashboard")
+  // Invoices expose billing data for all clients; only staff (team) may view.
+  // getAllInvoicesWithData is RLS-scoped to is_team(), so non-team roles would
+  // otherwise render an empty/broken page.
+  if (user.role !== "team") redirect("/dashboard")
 
   const supabase = await createClient()
 

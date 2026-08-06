@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
-import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { getCurrentUser } from "@/lib/supabase/session"
 import { fetchRecentMessages } from "@/lib/messages"
 import { DashboardRealtimeSync } from "@/components/dashboard/dashboard-live"
@@ -118,38 +117,6 @@ export default async function DashboardPage() {
     projects = data
   } catch {
     projects = []
-  }
-
-  if ((!projects || projects.length === 0) && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const admin = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
-
-    if (admin) {
-      if (isAdmin) {
-        const { data: adminProjects } = await admin
-          .from("projects")
-          .select("*, clients(name, company)")
-          .order("created_at", { ascending: false })
-        if (adminProjects && adminProjects.length > 0) projects = adminProjects
-      } else if (isTL && myMember) {
-        const { data: adminProjects } = await admin
-          .from("projects")
-          .select("*, clients(name, company)")
-          .eq("tl_id", myMember.id)
-          .order("created_at", { ascending: false })
-        if (adminProjects && adminProjects.length > 0) projects = adminProjects
-      } else if (isWorker && projectIdsForWorker && projectIdsForWorker.length > 0) {
-        const { data: adminProjects } = await admin
-          .from("projects")
-          .select("*, clients(name, company)")
-          .in("id", projectIdsForWorker)
-          .order("created_at", { ascending: false })
-        if (adminProjects && adminProjects.length > 0) projects = adminProjects
-      }
-    }
   }
 
   const all = (projects ?? []) as {

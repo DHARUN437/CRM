@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { getCurrentUser } from "@/lib/supabase/session"
 import { CreateProjectDialog } from "@/components/projects/create-project-dialog"
 import { getClientsForSelect } from "@/lib/clients"
@@ -53,36 +52,8 @@ export default async function ProjectsPage() {
       .order("created_at", { ascending: false })
   }
 
-  let { data: projects } = await projectQuery
+  const { data: projects } = await projectQuery
 
-  if ((!projects || projects.length === 0) && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const admin = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
-
-    if (isAdmin) {
-      const { data: adminProjects } = await admin
-        .from("projects")
-        .select("*, clients(name, company)")
-        .order("created_at", { ascending: false })
-      if (adminProjects && adminProjects.length > 0) {
-        projects = adminProjects
-      }
-    } else if (isTL && myMember) {
-      const { data: adminProjects } = await admin
-        .from("projects")
-        .select("*, clients(name, company)")
-        .eq("tl_id", myMember.id)
-        .order("created_at", { ascending: false })
-      if (adminProjects && adminProjects.length > 0) {
-        projects = adminProjects
-      }
-    }
-  }
-
-  const projectIds = (projects ?? []).map((p) => p.id)
   const [{ data: assignments }, { data: teamLeads }, clientList] = await Promise.all([
     isAdmin
       ? supabase

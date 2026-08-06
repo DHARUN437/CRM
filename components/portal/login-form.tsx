@@ -34,9 +34,17 @@ export function PortalLoginForm() {
     
     setTimeout(() => {
       const searchParams = new URLSearchParams(window.location.search)
-      const nextTarget = searchParams.get("next")
+      let nextTarget = searchParams.get("next")
 
       if (nextTarget) {
+        try {
+          nextTarget = decodeURIComponent(nextTarget)
+          if (!nextTarget.startsWith("/")) {
+            nextTarget = "/portal"
+          }
+        } catch {
+          nextTarget = "/portal"
+        }
         router.push(nextTarget)
       } else {
         router.push("/portal")

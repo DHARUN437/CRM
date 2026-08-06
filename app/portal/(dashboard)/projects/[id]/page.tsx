@@ -1,6 +1,5 @@
 import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { getActiveClient } from "@/lib/supabase/portal"
 import { UploadDocuments } from "@/components/portal/upload-documents"
 import { DocumentRequests } from "@/components/portal/document-requests"
@@ -45,15 +44,6 @@ import {
   type ProjectTask,
 } from "@/lib/portal-types"
 
-function getAdminClient() {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
-
 export const dynamic = "force-dynamic"
 
 interface ProjectDetailPageProps {
@@ -67,28 +57,16 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   const client = await getActiveClient(supabase)
   if (!client) redirect("/portal/login")
 
-  let { data: project } = await supabase
+  const { data: project } = await supabase
     .from("projects")
     .select("*")
     .eq("id", id)
     .maybeSingle()
 
-  if (!project && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const admin = getAdminClient()
-    if (admin) {
-      const { data: adminProject } = await admin
-        .from("projects")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle()
-      project = adminProject
-    }
-  }
-
   if (!project) notFound()
 
-  // Fetch all related real-time project resources with service role fallback
-  let [{ data: documents }, { data: assignments }, { data: requests }, { data: features }, { data: tasks }] =
+  // Fetch all related real-time project resources
+  const [{ data: documents }, { data: assignments }, { data: requests }, { data: features }, { data: tasks }] =
     await Promise.all([
       supabase
         .from("project_documents")
@@ -115,52 +93,6 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         .eq("project_id", id)
         .order("sort_order", { ascending: true }),
     ])
-
-  // Fallback to admin client if any query was restricted by RLS
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const admin = getAdminClient()
-    if (admin) {
-      if (!documents || documents.length === 0) {
-        const { data: adminDocs } = await admin
-          .from("project_documents")
-          .select("*")
-          .eq("project_id", id)
-          .order("created_at", { ascending: false })
-        if (adminDocs) documents = adminDocs
-      }
-      if (!assignments || assignments.length === 0) {
-        const { data: adminAssign } = await admin
-          .from("project_assignments")
-          .select("team_members(name, role)")
-          .eq("project_id", id)
-        if (adminAssign) assignments = adminAssign
-      }
-      if (!requests || requests.length === 0) {
-        const { data: adminReqs } = await admin
-          .from("document_requests")
-          .select("*")
-          .eq("project_id", id)
-          .order("requested_at", { ascending: false })
-        if (adminReqs) requests = adminReqs
-      }
-      if (!features || features.length === 0) {
-        const { data: adminFeat } = await admin
-          .from("feature_requests")
-          .select("*")
-          .eq("project_id", id)
-          .order("created_at", { ascending: false })
-        if (adminFeat) features = adminFeat
-      }
-      if (!tasks || tasks.length === 0) {
-        const { data: adminTasks } = await admin
-          .from("project_tasks")
-          .select("*, team_members!tasks_assignee_id_fkey(name)")
-          .eq("project_id", id)
-          .order("sort_order", { ascending: true })
-        if (adminTasks) tasks = adminTasks
-      }
-    }
-  }
 
   const meta =
     PROJECT_STATUS_META[project.status as ProjectStatus] ??

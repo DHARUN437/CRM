@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/supabase/session"
 
@@ -8,17 +7,6 @@ export const dynamic = "force-dynamic"
 function getIdFromRequest(request: Request): string | null {
   const parts = new URL(request.url).pathname.split("/").filter(Boolean)
   return parts[parts.length - 1] ?? null
-}
-
-function getDbClient(anonClient: any) {
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
-  }
-  return anonClient
 }
 
 // ── PATCH /api/projects/[id] — update project fields ────────────────────────
@@ -57,10 +45,10 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 })
   }
 
-  const anonClient = await createClient()
-  const db = getDbClient(anonClient)
+  // Uses the signed-in user's session — RLS (team_projects_all) gates the write.
+  const supabase = await createClient()
 
-  const { data, error } = await db
+  const { data, error } = await supabase
     .from("projects")
     .update(patch)
     .eq("id", id)
@@ -82,10 +70,8 @@ export async function DELETE(request: Request) {
   const id = getIdFromRequest(request)
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
 
-  const anonClient = await createClient()
-  const db = getDbClient(anonClient)
-
-  const { error } = await db.from("projects").delete().eq("id", id)
+  const supabase = await createClient()
+  const { error } = await supabase.from("projects").delete().eq("id", id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 

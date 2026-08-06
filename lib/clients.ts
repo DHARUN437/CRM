@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server"
-import { createClient as createAdminClient } from "@supabase/supabase-js"
 import type { ClientPaymentRow, ClientProfile, ProjectStatus } from "@/lib/portal-types"
 
 export interface ClientProjectSummary {
@@ -20,38 +19,17 @@ export interface ClientStats {
   newThisMonth: number
 }
 
-function getAdminClient() {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
-
 /**
- * Fetch simplified client list for dropdown select boxes (with admin fallback).
+ * Fetch simplified client list for dropdown select boxes. RLS scopes rows to
+ * the signed-in staff member (team/admin/tl).
  */
 export async function getClientsForSelect(): Promise<{ id: string; name: string; company: string | null }[]> {
   const supabase = await createClient()
 
-  let { data: clients } = await supabase
+  const { data: clients } = await supabase
     .from("clients")
     .select("id, name, company")
     .order("name", { ascending: true })
-
-  if ((!clients || clients.length === 0) && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const admin = getAdminClient()
-    if (admin) {
-      const { data: adminClients } = await admin
-        .from("clients")
-        .select("id, name, company")
-        .order("name", { ascending: true })
-      if (adminClients && adminClients.length > 0) {
-        clients = adminClients
-      }
-    }
-  }
 
   return (clients ?? []) as { id: string; name: string; company: string | null }[]
 }
@@ -63,24 +41,10 @@ export async function getClientsForSelect(): Promise<{ id: string; name: string;
 export async function getClientsWithStats(): Promise<ClientWithStats[]> {
   const supabase = await createClient()
 
-  let { data: clients } = await supabase
+  const { data: clients } = await supabase
     .from("clients")
     .select("id, user_id, name, company, email, phone, created_at")
     .order("created_at", { ascending: false })
-
-  // If RLS returns empty data, try admin client as a fallback
-  if ((!clients || clients.length === 0) && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const admin = getAdminClient()
-    if (admin) {
-      const { data: adminClients } = await admin
-        .from("clients")
-        .select("id, user_id, name, company, email, phone, created_at")
-        .order("created_at", { ascending: false })
-      if (adminClients && adminClients.length > 0) {
-        clients = adminClients
-      }
-    }
-  }
 
   const { data: projects } = await supabase
     .from("projects")
@@ -165,25 +129,13 @@ export interface RichClientProfile {
 export async function getClientProfileDetails(id: string): Promise<RichClientProfile | null> {
   const supabase = await createClient()
 
-  let clientRes = await supabase
+  const clientRes = await supabase
     .from("clients")
     .select("*")
     .eq("id", id)
     .single()
 
-  let client = clientRes.data
-
-  if (!client && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const admin = getAdminClient()
-    if (admin) {
-      const { data: adminClient } = await admin
-        .from("clients")
-        .select("*")
-        .eq("id", id)
-        .single()
-      client = adminClient
-    }
-  }
+  const client = clientRes.data
 
   if (!client) return null
 

@@ -136,9 +136,7 @@ export function RequestFeatureDialog({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerTrigger asChild>
-          {trigger ?? <Button size="sm">Request a feature</Button>}
-        </DrawerTrigger>
+        <DrawerTrigger render={trigger ?? <Button size="sm">Request a feature</Button>} />
         <DrawerContent className="px-4">
           <DrawerHeader className="px-0 text-left">
             <DrawerTitle>Request a feature</DrawerTitle>
@@ -153,9 +151,7 @@ export function RequestFeatureDialog({
               {saving && <Loader2 className="size-4 animate-spin mr-2" />}
               Submit request
             </Button>
-            <DrawerClose asChild>
-              <Button variant="outline" className="w-full">Cancel</Button>
-            </DrawerClose>
+            <DrawerClose render={<Button variant="outline" className="w-full">Cancel</Button>} />
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
@@ -164,9 +160,7 @@ export function RequestFeatureDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? <Button size="sm">Request a feature</Button>}
-      </DialogTrigger>
+      <DialogTrigger render={trigger ?? <Button size="sm">Request a feature</Button>} />
       <DialogContent className="sm:max-w-md rounded-3xl p-6">
         <DialogHeader>
           <DialogTitle>Request a feature</DialogTitle>

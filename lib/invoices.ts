@@ -1,38 +1,14 @@
 import { createClient } from "@/lib/supabase/server"
-import { createClient as createAdminClient } from "@supabase/supabase-js"
 import type { Invoice, InvoicePayment, ClientPaymentRow } from "@/lib/portal-types"
-
-function getAdminClient() {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
 
 export async function getInvoicesForClient(clientId: string): Promise<Invoice[]> {
   const supabase = await createClient()
 
-  let { data } = await supabase
+  const { data } = await supabase
     .from("invoices")
     .select("*, projects(name)")
     .eq("client_id", clientId)
     .order("created_at", { ascending: false })
-
-  if ((!data || data.length === 0) && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const admin = getAdminClient()
-    if (admin) {
-      const { data: adminData } = await admin
-        .from("invoices")
-        .select("*, projects(name)")
-        .eq("client_id", clientId)
-        .order("created_at", { ascending: false })
-      if (adminData && adminData.length > 0) {
-        data = adminData
-      }
-    }
-  }
 
   const invoiceIds = (data ?? []).map((inv) => inv.id as string)
   let paymentRows: unknown[] = []
@@ -44,19 +20,6 @@ export async function getInvoicesForClient(clientId: string): Promise<Invoice[]>
       .order("created_at", { ascending: false })
 
     paymentRows = pRows ?? []
-    if (paymentRows.length === 0 && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      const admin = getAdminClient()
-      if (admin) {
-        const { data: adminPRows } = await admin
-          .from("invoice_payments")
-          .select("*")
-          .in("invoice_id", invoiceIds)
-          .order("created_at", { ascending: false })
-        if (adminPRows && adminPRows.length > 0) {
-          paymentRows = adminPRows
-        }
-      }
-    }
   }
 
   const paymentsByInvoice = new Map<string, InvoicePayment[]>()
@@ -90,41 +53,15 @@ export async function getInvoicesForClient(clientId: string): Promise<Invoice[]>
 export async function getAllInvoicesWithData() {
   const supabase = await createClient()
 
-  let { data: invoices } = await supabase
+  const { data: invoices } = await supabase
     .from("invoices")
     .select("*, clients(company, name), projects(name)")
     .order("created_at", { ascending: false })
 
-  if ((!invoices || invoices.length === 0) && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const admin = getAdminClient()
-    if (admin) {
-      const { data: adminInvoices } = await admin
-        .from("invoices")
-        .select("*, clients(company, name), projects(name)")
-        .order("created_at", { ascending: false })
-      if (adminInvoices && adminInvoices.length > 0) {
-        invoices = adminInvoices
-      }
-    }
-  }
-
-  let { data: paymentRows } = await supabase
+  const { data: paymentRows } = await supabase
     .from("invoice_payments")
     .select("*, invoices!inner(invoice_number, project_id, projects(name))")
     .order("created_at", { ascending: false })
-
-  if ((!paymentRows || paymentRows.length === 0) && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const admin = getAdminClient()
-    if (admin) {
-      const { data: adminPaymentRows } = await admin
-        .from("invoice_payments")
-        .select("*, invoices!inner(invoice_number, project_id, projects(name))")
-        .order("created_at", { ascending: false })
-      if (adminPaymentRows && adminPaymentRows.length > 0) {
-        paymentRows = adminPaymentRows
-      }
-    }
-  }
 
   const payments = (paymentRows ?? []).map((p: Record<string, unknown>) => {
     const inv = p.invoices as

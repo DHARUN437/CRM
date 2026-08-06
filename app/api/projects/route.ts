@@ -1,20 +1,8 @@
 import { NextResponse } from "next/server"
-import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/supabase/session"
 
 export const dynamic = "force-dynamic"
-
-function getDbClient(anonClient: any) {
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
-  }
-  return anonClient
-}
 
 export async function POST(request: Request) {
   const user = await getCurrentUser()
@@ -47,10 +35,10 @@ export async function POST(request: Request) {
     budget: typeof body.budget === "number" ? body.budget : null,
   }
 
-  const anonClient = await createClient()
-  const db = getDbClient(anonClient)
+  // Uses the signed-in user's session — RLS (team_projects_all) gates the write.
+  const supabase = await createClient()
 
-  const { data, error } = await db
+  const { data, error } = await supabase
     .from("projects")
     .insert(payload)
     .select("id")

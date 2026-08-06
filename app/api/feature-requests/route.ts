@@ -1,15 +1,5 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { createClient as createAdminClient } from "@supabase/supabase-js"
-
-function getAdminClient() {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -22,97 +12,39 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json()
-  const { projectId, clientId, title, description, priority = "medium" } = body
+  const { projectId, title, description, priority = "medium" } = body
 
   if (!projectId || !title) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
-  const admin = getAdminClient()
-  const clientToUse = admin || supabase
+  // Resolve the owning client from the project. This select is RLS-scoped to
+  // the signed-in user, so it only succeeds for projects the caller can see.
+  const { data: proj } = await supabase
+    .from("projects")
+    .select("client_id")
+    .eq("id", projectId)
+    .maybeSingle()
 
-  // 1. Resolve valid client_id from project or clients table to satisfy foreign key constraint
-  let validClientId: string | null = clientId || null
-
-  if (projectId) {
-    const { data: proj } = await clientToUse
-      .from("projects")
-      .select("client_id")
-      .eq("id", projectId)
-      .maybeSingle()
-
-    if (proj?.client_id) {
-      validClientId = proj.client_id
-    }
+  if (!proj?.client_id) {
+    return NextResponse.json({ error: "Project not found" }, { status: 403 })
   }
 
-  // 2. Verify validClientId actually exists in clients table
-  if (validClientId) {
-    const { data: existingClient } = await clientToUse
-      .from("clients")
-      .select("id")
-      .eq("id", validClientId)
-      .maybeSingle()
-
-    if (!existingClient) {
-      const { data: fallbackClient } = await clientToUse
-        .from("clients")
-        .select("id")
-        .limit(1)
-        .maybeSingle()
-
-      if (fallbackClient?.id) {
-        validClientId = fallbackClient.id
-      }
-    }
-  }
-
-  // If no client row found at all, create a default client row for this user
-  if (!validClientId && user) {
-    const { data: newClient } = await clientToUse
-      .from("clients")
-      .insert({
-        user_id: user.id,
-        name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Client",
-        company: "Joy Corporate Solutions",
-        email: user.email ?? "",
-      })
-      .select("id")
-      .single()
-
-    if (newClient?.id) {
-      validClientId = newClient.id
-    }
-  }
-
-  const payload = {
-    project_id: projectId,
-    client_id: validClientId,
-    title: String(title).trim(),
-    description: description ? String(description).trim() : null,
-    priority,
-    status: "open",
-  }
-
-  // 3. Insert feature request using admin client (or standard client fallback)
-  let { data, error } = await clientToUse
+  // RLS (feature_requests_client_insert / feature_requests_team_all) still
+  // verifies the caller may write to this project. The service-role fallback
+  // that previously bypassed those checks is removed.
+  const { data, error } = await supabase
     .from("feature_requests")
-    .insert(payload)
+    .insert({
+      project_id: projectId,
+      client_id: proj.client_id,
+      title: String(title).trim(),
+      description: description ? String(description).trim() : null,
+      priority,
+      status: "open",
+    })
     .select()
     .single()
-
-  if (error && !admin && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const adminFallback = getAdminClient()
-    if (adminFallback) {
-      const adminRes = await adminFallback
-        .from("feature_requests")
-        .insert(payload)
-        .select()
-        .single()
-      data = adminRes.data
-      error = adminRes.error
-    }
-  }
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

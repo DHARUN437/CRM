@@ -219,6 +219,11 @@ CREATE INDEX IF NOT EXISTS idx_projects_tl ON public.projects (tl_id);
 -- ---------------------------------------------------------------------------
 -- 8. Allow staff (team + TLs) to view and manage client details
 -- ---------------------------------------------------------------------------
+-- SECURITY: this must read the role from the JWT only. The old version also
+-- returned true when the user had ANY team_members row, which — because every
+-- worker gets a team_members row via handle_new_team_member — silently granted
+-- workers full admin (is_team()) access to every client/project. app_metadata
+-- is admin-controlled, so the JWT role is the source of truth.
 CREATE OR REPLACE FUNCTION public.is_team()
 RETURNS boolean
 LANGUAGE sql
@@ -227,11 +232,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
   SELECT
-    coalesce((auth.jwt() -> 'app_metadata' ->> 'role') IN ('team', 'admin', 'tl'), false)
-    OR EXISTS (
-      SELECT 1 FROM public.team_members tm
-      WHERE tm.user_id = auth.uid()
-    );
+    coalesce((auth.jwt() -> 'app_metadata' ->> 'role') IN ('team', 'admin', 'tl'), false);
 $$;
 
 DROP POLICY IF EXISTS "staff_clients_select" ON public.clients;

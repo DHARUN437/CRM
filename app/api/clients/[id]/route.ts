@@ -11,17 +11,6 @@ async function getClientId(request: Request): Promise<string | null> {
   return parts[parts.length - 1] ?? null
 }
 
-function getDbClient(anonClient: any) {
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
-  }
-  return anonClient
-}
-
 export async function PATCH(request: Request) {
   const user = await getCurrentUser()
   if (!user || user.role !== "team") {
@@ -51,10 +40,10 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "nothing to update" }, { status: 400 })
   }
 
-  const anonClient = await createClient()
-  const db = getDbClient(anonClient)
+  // Uses the signed-in user's session — RLS (team_clients_all) gates the write.
+  const supabase = await createClient()
 
-  const { data, error } = await db
+  const { data, error } = await supabase
     .from("clients")
     .update(patch)
     .eq("id", id)
@@ -79,10 +68,10 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "missing id" }, { status: 400 })
   }
 
-  const anonClient = await createClient()
-  const db = getDbClient(anonClient)
+  // Uses the signed-in user's session — RLS (team_clients_all) gates the write.
+  const supabase = await createClient()
 
-  const { data: client } = await db
+  const { data: client } = await supabase
     .from("clients")
     .select("user_id")
     .eq("id", id)
@@ -92,7 +81,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Client not found" }, { status: 404 })
   }
 
-  const { error: deleteError } = await db
+  const { error: deleteError } = await supabase
     .from("clients")
     .delete()
     .eq("id", id)
@@ -102,6 +91,7 @@ export async function DELETE(request: Request) {
   }
 
   // Also delete the auth user so they can no longer sign in.
+  // auth.admin is a legitimate service-role use (not a data bypass).
   if (client.user_id && process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const admin = createAdminClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

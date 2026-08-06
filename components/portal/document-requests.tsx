@@ -328,7 +328,6 @@ export function DocumentRequests({
   projectId,
   requests: initialRequests,
 }: DocumentRequestsProps) {
-  const router = useRouter()
   const [requestsList, setRequestsList] = useState<PortalRequest[]>(initialRequests)
 
   useEffect(() => {
@@ -347,8 +346,23 @@ export function DocumentRequests({
           table: "document_requests",
           filter: `project_id=eq.${projectId}`,
         },
-        () => {
-          router.refresh()
+        (payload) => {
+          // Update local state directly instead of re-fetching the whole page.
+          if (payload.eventType === "INSERT") {
+            const row = payload.new as unknown as PortalRequest
+            setRequestsList((prev) => {
+              if (prev.some((r) => r.id === row.id)) return prev
+              return [row, ...prev]
+            })
+          } else if (payload.eventType === "UPDATE") {
+            const row = payload.new as unknown as Partial<PortalRequest> & { id: string }
+            setRequestsList((prev) =>
+              prev.map((r) => (r.id === row.id ? { ...r, ...row } : r))
+            )
+          } else if (payload.eventType === "DELETE") {
+            const old = payload.old as { id: string }
+            setRequestsList((prev) => prev.filter((r) => r.id !== old.id))
+          }
         }
       )
       .subscribe()
@@ -356,7 +370,7 @@ export function DocumentRequests({
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [projectId, router])
+  }, [projectId])
 
   const pending = requestsList.filter((r) => r.status === "pending")
   const fulfilled = requestsList.filter((r) => r.status === "fulfilled")

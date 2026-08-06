@@ -236,12 +236,14 @@ export function UploadDocuments({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerTrigger asChild>
-          <Button variant={variant} className="rounded-full shadow-sm hover:shadow">
-            <CloudUpload className="size-4 mr-2" />
-            {label}
-          </Button>
-        </DrawerTrigger>
+        <DrawerTrigger
+          render={
+            <Button variant={variant} className="rounded-full shadow-sm hover:shadow">
+              <CloudUpload className="size-4 mr-2" />
+              {label}
+            </Button>
+          }
+        />
         <DrawerContent className="px-4">
           <DrawerHeader className="text-left px-0">
             <DrawerTitle>Upload documents</DrawerTitle>
@@ -255,9 +257,7 @@ export function UploadDocuments({
               {uploading && <Loader2 className="size-4 animate-spin mr-2" />}
               {uploading ? "Uploading…" : "Upload to team"}
             </Button>
-            <DrawerClose asChild>
-              <Button variant="outline" className="w-full">Cancel</Button>
-            </DrawerClose>
+            <DrawerClose render={<Button variant="outline" className="w-full">Cancel</Button>} />
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
@@ -266,12 +266,14 @@ export function UploadDocuments({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant={variant} className="rounded-full shadow-sm hover:shadow">
-          <CloudUpload className="size-4 mr-2" />
-          {label}
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          <Button variant={variant} className="rounded-full shadow-sm hover:shadow">
+            <CloudUpload className="size-4 mr-2" />
+            {label}
+          </Button>
+        }
+      />
       <DialogContent className="sm:max-w-[425px] rounded-3xl p-6">
         <DialogHeader>
           <DialogTitle>Upload documents</DialogTitle>

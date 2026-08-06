@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">JoyCRM</string>
-    <string name="title_activity_main">JoyCRM</string>
-    <string name="package_name">com.joycorporate.crm</string>
-    <string name="custom_url_scheme">com.joycorporate.crm</string>
-</resources>

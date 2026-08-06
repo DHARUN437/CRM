@@ -1,21 +1,11 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { getCurrentUser } from "@/lib/supabase/session"
 import { DocumentsView, type TeamDocument } from "@/components/documents/documents-view"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileUp, FolderKanban, Inbox } from "lucide-react"
 
 export const dynamic = "force-dynamic"
-
-function getAdminClient() {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
 
 export default async function DocumentsPage() {
   const supabase = await createClient()
@@ -51,37 +41,12 @@ export default async function DocumentsPage() {
     documentsQuery = documentsQuery.in("project_id", scopedProjectIds)
   }
 
-  let [{ data: documents }, { data: projects }, { data: clients }] =
+  const [{ data: documents }, { data: projects }, { data: clients }] =
     await Promise.all([
       documentsQuery,
       supabase.from("projects").select("id, name"),
       supabase.from("clients").select("id"),
     ])
-
-  // Fallback to service role client if RLS policies restrict document fetching
-  if ((!documents || documents.length === 0) && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const admin = getAdminClient()
-    if (admin) {
-      let adminQuery = admin
-        .from("project_documents")
-        .select("*, projects(name), clients(name, company)")
-        .order("created_at", { ascending: false })
-
-      if (isWorker && scopedProjectIds && scopedProjectIds.length > 0) {
-        adminQuery = adminQuery.in("project_id", scopedProjectIds)
-      }
-
-      const { data: adminDocs } = await adminQuery
-      if (adminDocs && adminDocs.length > 0) {
-        documents = adminDocs
-      }
-
-      if (!projects || projects.length === 0) {
-        const { data: adminProjects } = await admin.from("projects").select("id, name")
-        if (adminProjects) projects = adminProjects
-      }
-    }
-  }
 
   const docRows = (documents ?? []) as unknown as TeamDocument[]
   const projectList = (projects ?? []) as { id: string; name: string }[]

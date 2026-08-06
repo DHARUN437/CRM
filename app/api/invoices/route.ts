@@ -1,24 +1,13 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { createClient as createAdminClient } from "@supabase/supabase-js"
-
-function getAdminClient() {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null
-  return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
+import { getCurrentUser } from "@/lib/supabase/session"
 
 export async function POST(request: Request) {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  if (!user || user.role !== "team") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   const body = await request.json()
@@ -55,31 +44,17 @@ export async function POST(request: Request) {
     items,
   }
 
-  let data = null
-  let error = null
-
-  // 1. Try standard client
-  const res = await supabase.from("invoices").insert(payload).select().single()
-  data = res.data
-  error = res.error
-
-  // 2. If RLS recursion or policy error, fallback to admin client
-  if (error && (error.message.includes("recursion") || error.code === "42P17" || error.code === "42501")) {
-    const admin = getAdminClient()
-    if (admin) {
-      const adminRes = await admin.from("invoices").insert(payload).select().single()
-      data = adminRes.data
-      error = adminRes.error
-    }
-  }
+  // RLS (invoices_team_all) verifies the caller is staff. The service-role
+  // fallback that previously let any signed-in user (including clients) create
+  // invoices is removed.
+  const { data, error } = await supabase.from("invoices").insert(payload).select().single()
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // Notify client if user profile exists (with admin fallback to prevent RLS recursion)
+  // Notify the client (notifications_team_insert requires is_team()).
   try {
-    let clientUserId: string | null = null
     const { data: client } = await supabase
       .from("clients")
       .select("user_id")
@@ -87,25 +62,8 @@ export async function POST(request: Request) {
       .maybeSingle()
 
     if (client?.user_id) {
-      clientUserId = client.user_id
-    } else {
-      const admin = getAdminClient()
-      if (admin) {
-        const { data: adminClient } = await admin
-          .from("clients")
-          .select("user_id")
-          .eq("id", clientId)
-          .maybeSingle()
-        if (adminClient?.user_id) {
-          clientUserId = adminClient.user_id
-        }
-      }
-    }
-
-    if (clientUserId) {
-      const notifClient = getAdminClient() || supabase
-      await notifClient.from("notifications").insert({
-        user_id: clientUserId,
+      await supabase.from("notifications").insert({
+        user_id: client.user_id,
         title: "New Invoice Issued",
         message: `Invoice ${invoiceNumber} for ₹${total.toFixed(2)} is now available.`,
         link: "/portal/invoices",
@@ -121,12 +79,10 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  if (!user || user.role !== "team") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   const body = await request.json()
@@ -153,9 +109,7 @@ export async function PATCH(request: Request) {
     )
   }
 
-  const clientToUse = getAdminClient() || supabase
-
-  const { data: invoice, error: fetchError } = await clientToUse
+  const { data: invoice, error: fetchError } = await supabase
     .from("invoices")
     .select("*")
     .eq("id", invoiceId)
@@ -181,7 +135,7 @@ export async function PATCH(request: Request) {
     updateData.status = "pending"
   }
 
-  const { data: payment, error: paymentError } = await clientToUse
+  const { data: payment, error: paymentError } = await supabase
     .from("invoice_payments")
     .insert({
       invoice_id: invoiceId,
@@ -196,7 +150,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: paymentError.message }, { status: 500 })
   }
 
-  const { data, error } = await clientToUse
+  const { data, error } = await supabase
     .from("invoices")
     .update(updateData)
     .eq("id", invoiceId)
@@ -209,7 +163,7 @@ export async function PATCH(request: Request) {
 
   // Notify the client
   try {
-    const { data: client } = await clientToUse
+    const { data: client } = await supabase
       .from("clients")
       .select("user_id")
       .eq("id", invoice.client_id)
@@ -220,7 +174,7 @@ export async function PATCH(request: Request) {
       const amountPaid = Number(updateData.amount_paid)
       const methodLabel =
         method === "gpay" ? "GPay" : method === "netbanking" ? "Net Banking" : "Cash"
-      await clientToUse.from("notifications").insert({
+      await supabase.from("notifications").insert({
         user_id: client.user_id,
         title: fullyPaid ? "Payment Received" : "Partial Payment Received",
         message: fullyPaid
