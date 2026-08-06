@@ -217,10 +217,15 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
             </div>
 
             {/* Minimal Footer Nav */}
-            <div className="flex items-center justify-center gap-6 pt-4 text-xs font-medium text-slate-500">
-              <button className="hover:text-slate-300 transition-colors">Privacy</button>
-              <button className="hover:text-slate-300 transition-colors">Terms</button>
-              <button className="hover:text-slate-300 transition-colors">Support</button>
+            <div className="flex flex-col items-center justify-center gap-2 pt-4 text-xs font-medium text-slate-500">
+              <div className="text-[11px] text-[#818CF8] font-mono font-bold bg-[#818CF8]/10 px-3 py-1 rounded-full border border-[#818CF8]/20">
+                v1.0.4-live-build-test
+              </div>
+              <div className="flex items-center gap-6">
+                <button className="hover:text-slate-300 transition-colors">Privacy</button>
+                <button className="hover:text-slate-300 transition-colors">Terms</button>
+                <button className="hover:text-slate-300 transition-colors">Support</button>
+              </div>
             </div>
 
           </motion.div>
