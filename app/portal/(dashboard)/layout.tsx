@@ -1,8 +1,7 @@
 import { PortalHeader } from "@/components/portal/portal-header"
 import { PortalShell } from "@/components/portal/portal-shell"
-import { getActiveClient } from "@/lib/supabase/portal"
+import { getActiveClient, getPendingRequestCount } from "@/lib/supabase/portal"
 import { createClient } from "@/lib/supabase/server"
-import { getPendingRequestCount } from "@/lib/notifications"
 import { AppBackground } from "@/components/ui/app-background"
 import { MobileBottomNav } from "@/components/portal/mobile-bottom-nav"
 import { CommandPalette } from "@/components/portal/command-palette"
@@ -12,7 +11,7 @@ export default async function PortalLayout({ children }: { children: React.React
   const client = await getActiveClient(supabase)
 
   const pendingRequestCount = client
-    ? await getPendingRequestCount(client.id)
+    ? await getPendingRequestCount(supabase, client.id)
     : 0
 
   return (

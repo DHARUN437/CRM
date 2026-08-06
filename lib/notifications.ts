@@ -2,23 +2,6 @@
 
 import { useEffect } from "react"
 import { createClient as createBrowserClient } from "@/lib/supabase/client"
-import { createClient as createServerClient } from "@/lib/supabase/server"
-
-export async function getPendingRequestCount(clientId: string): Promise<number> {
-  try {
-    const supabase = await createServerClient()
-    const { count, error } = await supabase
-      .from("client_requests")
-      .select("id", { count: "exact", head: true })
-      .eq("client_id", clientId)
-      .eq("status", "pending")
-
-    if (error) return 0
-    return count ?? 0
-  } catch {
-    return 0
-  }
-}
 
 export function useCapacitorPushNotifications(userId?: string | null) {
   useEffect(() => {

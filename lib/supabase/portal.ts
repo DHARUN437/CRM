@@ -2,6 +2,27 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type { ClientProfile } from "@/lib/portal-types"
 
 /**
+ * Returns the pending request count for a given client ID.
+ */
+export async function getPendingRequestCount(
+  supabase: SupabaseClient,
+  clientId: string
+): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from("client_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", clientId)
+      .eq("status", "pending")
+
+    if (error) return 0
+    return count ?? 0
+  } catch {
+    return 0
+  }
+}
+
+/**
  * Returns the client profile for the signed-in user. Requires an active
  * auth session; returns null when signed out so pages can redirect to login.
  */
