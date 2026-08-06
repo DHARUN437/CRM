@@ -37,7 +37,12 @@ export function LoginForm() {
     sessionStorage.setItem("auth-booted", "true")
     
     setTimeout(() => {
-      if (user?.app_metadata?.role === "client") {
+      const searchParams = new URLSearchParams(window.location.search)
+      const nextTarget = searchParams.get("next")
+
+      if (nextTarget) {
+        router.push(nextTarget)
+      } else if (user?.app_metadata?.role === "client") {
         router.push("/portal")
       } else {
         router.push("/dashboard")

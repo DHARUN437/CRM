@@ -4,13 +4,17 @@
   RewriteEngine On
   RewriteBase /
 
-  # Do not rewrite static files or directories that exist
+  # Explicitly route /login and /portal/login (with or without query parameters like ?next=...) directly to index.html
+  RewriteRule ^login$ index.html [QSA,L]
+  RewriteRule ^portal/login$ index.html [QSA,L]
+
+  # Do not rewrite static files or directories that exist (images, js, css, download/JoyCRM.apk)
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # Fallback to index.html for client-side routing
-  RewriteRule ^ index.html [L]
+  # Fallback to index.html for all client-side routing with Query String Append (QSA)
+  RewriteRule ^ index.html [QSA,L]
 </IfModule>
 
 # Serve Android APK files with proper MIME type
