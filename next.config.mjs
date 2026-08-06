@@ -9,12 +9,8 @@ const nextConfig = {
   output: "standalone",
   outputFileTracingRoot: __dirname,
   // TypeScript errors now fail the build (was ignoreBuildErrors: true).
-  // ESLint is skipped during builds because the repo carries pre-existing
-  // lint debt (react-hooks/set-state-in-effect etc.) unrelated to this pass;
-  // it still runs via `npm run lint`.
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // ESLint is no longer integrated into Next.js builds (Next 16 removed it);
+  // lint still runs via `npm run lint`.
   images: {
     unoptimized: true,
   },
