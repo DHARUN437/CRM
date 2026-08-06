@@ -3,9 +3,7 @@
 import { createClient } from "@/lib/supabase/client"
 import { PanelLeft, Search, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ThemeToggle } from "@/components/app/theme-toggle"
 import { useEffect, useRef, useState } from "react"
-
 import { NotificationsBell } from "@/components/app/notifications-bell"
 
 export function Topbar({
@@ -54,7 +52,7 @@ export function Topbar({
     .join("") ?? "?"
 
   return (
-    <header className="sticky top-4 z-30 mx-4 lg:mx-8 mt-4 flex h-[64px] items-center gap-4 rounded-[20px] border border-white/50 dark:border-[#2A2A38] bg-white/72 dark:bg-[#17171F]/90 px-6 backdrop-blur-[24px] shadow-layered transition-all">
+    <header className="sticky top-4 z-30 mx-4 lg:mx-8 mt-4 flex h-[64px] items-center gap-4 rounded-[20px] border border-[#2A2A38] bg-[#17171F]/90 px-6 backdrop-blur-[24px] shadow-layered transition-all">
       <Button
         variant="ghost"
         size="icon-sm"
@@ -66,9 +64,9 @@ export function Topbar({
       </Button>
 
       <div className="flex items-center gap-4">
-        <h1 className="text-lg font-bold tracking-tight text-foreground/90 dark:text-[#F4F4F6] lg:text-xl">{title}</h1>
-        <div className="hidden h-4 w-px bg-border/60 dark:bg-[#2A2A38] md:block" />
-        <p className="hidden text-xs font-medium text-muted-foreground/80 dark:text-[#9797A8] md:block">
+        <h1 className="text-lg font-bold tracking-tight text-[#F4F4F6] lg:text-xl">{title}</h1>
+        <div className="hidden h-4 w-px bg-[#2A2A38] md:block" />
+        <p className="hidden text-xs font-medium text-[#9797A8] md:block">
           <span className="relative mr-1.5 inline-block size-2 rounded-full bg-success">
             <span className="absolute inset-0 animate-ping rounded-full bg-success opacity-75"></span>
           </span>
@@ -80,7 +78,7 @@ export function Topbar({
         <button
           type="button"
           onClick={onOpenSearch}
-          className="group hidden h-9 w-64 items-center gap-3 rounded-[14px] border border-border/60 dark:border-[#2A2A38] bg-white/50 dark:bg-[#1E1E28] px-3.5 text-[13px] font-medium text-muted-foreground dark:text-[#9797A8] transition-all hover:bg-white dark:hover:bg-[#252533] hover:shadow-[0_2px_8px_rgba(79,124,255,0.08)] hover:border-primary/20 md:flex xl:w-72"
+          className="group hidden h-9 w-64 items-center gap-3 rounded-[14px] border border-[#2A2A38] bg-[#1E1E28] px-3.5 text-[13px] font-medium text-[#9797A8] transition-all hover:bg-[#252533] hover:border-primary/20 md:flex xl:w-72"
         >
           <Search className="size-4 group-hover:text-primary dark:group-hover:text-[#818CF8] transition-colors" />
           <span>Quick Search...</span>
@@ -100,7 +98,6 @@ export function Topbar({
         </Button>
 
         <NotificationsBell />
-        <ThemeToggle />
 
         <div ref={menuRef} className="relative ml-1">
           <button

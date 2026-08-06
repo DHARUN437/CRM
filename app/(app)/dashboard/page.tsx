@@ -628,7 +628,7 @@ export default async function DashboardPage() {
                   <Link
                     key={message.id}
                     href={`/projects/${message.project_id}`}
-                    className={`group flex items-start justify-between gap-4 p-5 transition-all hover:bg-white/40 dark:hover:bg-[#1E1E28] ${
+                    className={`group flex items-start justify-between gap-4 p-5 transition-all hover:bg-[#1E1E28] ${
                       index > 0 ? "border-t border-border/40 dark:border-[#2A2A38]" : ""
                     }`}
                   >

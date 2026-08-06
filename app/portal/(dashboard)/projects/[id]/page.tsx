@@ -8,7 +8,6 @@ import { FeatureRequestsLive } from "@/components/projects/feature-requests-live
 import { TaskBoard } from "@/components/projects/task-board"
 import { DocumentPreviewLink } from "@/components/portal/document-preview-link"
 import { ProjectTimeline } from "@/components/portal/project-timeline"
-import { initials } from "@/components/portal/project-card"
 import {
   Avatar,
   AvatarFallback,
@@ -39,6 +38,7 @@ import {
   PROJECT_STATUS_META,
   formatBytes,
   formatDate,
+  initials,
   type ProjectStatus,
   type FeatureRequest,
   type ProjectTask,
@@ -181,12 +181,12 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         </CardContent>
       </Card>
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <Card className="rounded-3xl border-border/50 bg-white/60 shadow-sm backdrop-blur-xl xl:col-span-2">
+        <Card className="rounded-3xl border-border/50 bg-card shadow-sm backdrop-blur-xl xl:col-span-2">
           <CardHeader>
             <CardTitle className="text-lg tracking-tight">Project Timeline</CardTitle>
           </CardHeader>
           <CardContent>
-            <ProjectTimeline />
+            <ProjectTimeline status={project.status as ProjectStatus} progress={project.progress} />
           </CardContent>
         </Card>
 

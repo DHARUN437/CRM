@@ -35,11 +35,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  colorScheme: "dark light",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
-    { media: "(prefers-color-scheme: dark)", color: "#0A0A0F" },
-  ],
+  colorScheme: "dark",
+  themeColor: "#0A0A0F",
 }
 
 export default function RootLayout({
@@ -51,13 +48,14 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} dark bg-[#0A0A0F] text-[#F4F4F6]`}
-      style={{ backgroundColor: "#0A0A0F" }}
+      style={{ colorScheme: "dark", backgroundColor: "#0A0A0F" }}
       suppressHydrationWarning
     >
       <body className="font-sans antialiased bg-[#0A0A0F] text-[#F4F4F6] min-h-svh w-full overflow-x-hidden" suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
+          forcedTheme="dark"
           enableSystem={false}
           disableTransitionOnChange
         >

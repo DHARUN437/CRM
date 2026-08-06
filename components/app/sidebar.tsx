@@ -26,7 +26,7 @@ import { useRouter } from "next/navigation"
 
 function WorkspaceSwitcher() {
   return (
-    <div className="group flex w-full items-center gap-3 rounded-2xl border border-border/50 dark:border-[#2A2A38] bg-white/40 dark:bg-[#17171F] p-2.5 transition-all hover:bg-white/60 dark:hover:bg-[#1E1E28] hover:shadow-layered cursor-default">
+    <div className="group flex w-full items-center gap-3 rounded-2xl border border-[#2A2A38] bg-[#17171F] p-2.5 transition-all hover:bg-[#1E1E28] hover:shadow-layered cursor-default">
       <div className="relative flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-transparent p-0.5 shadow-sm ring-1 ring-primary/20 group-hover:shadow-[0_0_15px_rgba(79,124,255,0.15)] transition-shadow">
         <Image
           src="/logo.png"
@@ -91,7 +91,7 @@ function NavLink({
         <div className="absolute inset-0 rounded-2xl bg-transparent transition-colors duration-300 group-hover:bg-muted/40" />
       )}
       
-      <div className={cn("relative flex size-10 shrink-0 items-center justify-center rounded-full transition-all duration-300", active ? "bg-white dark:bg-[rgba(99,102,241,0.15)] shadow-[0_4px_12px_rgba(79,124,255,0.15)] ring-1 ring-primary/20 dark:ring-[#818CF8]/30" : "bg-transparent group-hover:bg-white/50 dark:group-hover:bg-[#1E1E28]/80")}>
+      <div className={cn("relative flex size-10 shrink-0 items-center justify-center rounded-full transition-all duration-300", active ? "bg-[rgba(99,102,241,0.15)] shadow-[0_4px_12px_rgba(79,124,255,0.15)] ring-1 ring-[#818CF8]/30" : "bg-transparent group-hover:bg-[#1E1E28]/80")}>
         <Icon className={cn("relative z-10 size-[22px] transition-transform duration-300 group-hover:scale-110", active ? "text-primary dark:text-[#818CF8]" : "text-muted-foreground dark:text-[#9797A8] group-hover:text-foreground/80 dark:group-hover:text-[#F4F4F6]")} />
       </div>
       
@@ -121,7 +121,7 @@ export function SidebarContent({
   const sections = navSectionsFor(role)
 
   return (
-    <div className="flex h-full flex-col gap-6 bg-white/72 dark:bg-[#12121A] dark:border-r dark:border-[#2A2A38] backdrop-blur-[24px] p-6 shadow-[4px_0_24px_rgba(15,23,42,0.02)]">
+    <div className="flex h-full flex-col gap-6 bg-[#12121A] border-r border-[#2A2A38] backdrop-blur-[24px] p-6 shadow-[4px_0_24px_rgba(0,0,0,0.4)]">
       <WorkspaceSwitcher />
 
       <ScrollArea className="-mx-1 flex-1 px-1">

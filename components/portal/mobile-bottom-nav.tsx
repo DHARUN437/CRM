@@ -17,7 +17,7 @@ export function MobileBottomNav({ clientId, pendingRequestCount }: MobileBottomN
 
   return (
     <div className="fixed inset-x-0 bottom-6 z-50 sm:hidden px-4">
-      <div className="mx-auto flex h-16 w-full max-w-sm items-center justify-between rounded-full border border-white/20 bg-white/70 px-6 shadow-[0_8px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl">
+      <div className="mx-auto flex h-16 w-full max-w-sm items-center justify-between rounded-full border border-[#2A2A38] bg-[#17171F]/90 px-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl">
         {portalLinks.map((link) => {
           const active = isActive(pathname, link.href)
           return (

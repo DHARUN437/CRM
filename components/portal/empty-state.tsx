@@ -21,7 +21,7 @@ export function EmptyState({ title, description, icon, action }: EmptyStateProps
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ type: "spring", stiffness: 300, damping: 24 }}
-      className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border/60 bg-white/30 px-6 py-16 text-center backdrop-blur-md"
+      className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border/60 bg-card/40 px-6 py-16 text-center backdrop-blur-md"
     >
       <div className="flex size-16 items-center justify-center rounded-full bg-primary/10 text-primary mb-6 ring-8 ring-primary/5">
         {icon}

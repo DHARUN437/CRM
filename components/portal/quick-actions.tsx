@@ -24,7 +24,7 @@ export function QuickActions() {
         <Button
           key={idx}
           variant="outline"
-          className="rounded-full bg-white/40 backdrop-blur-md hover:bg-white/80 hover:-translate-y-0.5 transition-all shadow-sm hover:shadow text-sm border-white/40"
+          className="rounded-full bg-card/60 backdrop-blur-md hover:bg-card hover:-translate-y-0.5 transition-all shadow-sm text-sm border-border/50"
         >
           <action.icon className="mr-2 size-4 text-primary" />
           {action.label}

@@ -42,7 +42,7 @@ export function PortalHeader({ clientId, pendingRequestCount }: PortalHeaderProp
     <>
       {/* Desktop Floating Navigation */}
       <header className="hidden sm:flex sticky top-4 z-50 mx-auto w-full max-w-[1700px] px-8 mt-4">
-        <div className="flex h-[64px] w-full items-center justify-between gap-4 rounded-[20px] border border-white/50 dark:border-[#2A2A38] bg-white/72 dark:bg-[#17171F]/90 px-6 backdrop-blur-[24px] shadow-layered transition-all">
+        <div className="flex h-[64px] w-full items-center justify-between gap-4 rounded-[20px] border border-[#2A2A38] bg-[#17171F]/90 px-6 backdrop-blur-[24px] shadow-layered transition-all">
           <div className="flex items-center gap-8">
             <Link href="/portal" className="flex items-center gap-3">
               <Image
@@ -112,7 +112,7 @@ export function PortalHeader({ clientId, pendingRequestCount }: PortalHeaderProp
       </header>
 
       {/* Mobile Compact Header */}
-      <header className="sm:hidden sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b border-white/10 bg-white/60 px-4 backdrop-blur-xl">
+      <header className="sm:hidden sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b border-[#2A2A38] bg-[#17171F]/90 px-4 backdrop-blur-xl">
         <Link href="/portal" className="flex items-center gap-2">
           <Image
             src="/logo.png"

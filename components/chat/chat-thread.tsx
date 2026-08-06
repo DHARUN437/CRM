@@ -8,9 +8,8 @@ import { useEffect, useRef, useState } from "react"
 import { Loader2, Paperclip, Send, FileText, X, MessageSquareText } from "lucide-react"
 import type { ProjectMessage } from "@/lib/portal-types"
 import { cn } from "@/lib/utils"
-import { formatMessageTime, formatBytes } from "@/lib/portal-types"
+import { formatMessageTime, formatBytes, initials } from "@/lib/portal-types"
 import { Badge } from "@/components/ui/badge"
-import { initials } from "@/components/portal/project-card"
 
 interface ChatThreadProps {
   projectId: string
@@ -196,7 +195,7 @@ export function ChatThread({
   }
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-3xl border border-white/50 bg-white/60 shadow-sm backdrop-blur-xl">
+    <div className="flex flex-col overflow-hidden rounded-3xl border border-border/50 bg-card shadow-sm backdrop-blur-xl">
       <div className="flex max-h-[420px] min-h-[360px] flex-col gap-4 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-foreground/10">
         {!messages.length ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 py-10 text-center">
@@ -225,7 +224,7 @@ export function ChatThread({
                   )}
                 >
                   {showAvatar ? (
-                    <div className="flex shrink-0 size-8 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/10 text-[11px] font-bold text-primary ring-2 ring-white">
+                    <div className="flex shrink-0 size-8 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/10 text-[11px] font-bold text-primary ring-2 ring-background">
                       {initials(message.sender_name)}
                     </div>
                   ) : (
@@ -248,7 +247,7 @@ export function ChatThread({
                         "rounded-2xl px-3.5 py-2 text-sm shadow-sm max-w-full break-words",
                         mine
                           ? "rounded-tr-sm bg-primary text-primary-foreground"
-                          : "rounded-tl-sm bg-white/80 dark:bg-[#1E1E28] border border-border/40 dark:border-[#2A2A38] text-foreground"
+                          : "rounded-tl-sm bg-[#1E1E28] border border-[#2A2A38] text-foreground"
                       )}
                     >
                       {message.body && (
@@ -274,9 +273,9 @@ export function ChatThread({
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t border-white/40 bg-white/40 p-4 backdrop-blur-md">
+      <div className="border-t border-border/50 bg-muted/20 p-4 backdrop-blur-md">
         {pendingFile && (
-          <div className="mb-3 flex items-center gap-3 rounded-xl border border-white/60 bg-white/80 px-4 py-2.5 text-xs shadow-sm">
+          <div className="mb-3 flex items-center gap-3 rounded-xl border border-border/50 bg-card px-4 py-2.5 text-xs shadow-sm">
             <FileText className="size-4 shrink-0 text-primary" />
             <span className="truncate font-medium">{pendingFile.name}</span>
             <span className="shrink-0 text-muted-foreground">
@@ -290,7 +289,7 @@ export function ChatThread({
             </button>
           </div>
         )}
-        <div className="flex items-end gap-3 bg-white/60 rounded-2xl border border-white/60 p-1.5 shadow-sm focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/30 transition-all">
+        <div className="flex items-end gap-3 bg-muted/30 rounded-2xl border border-border/50 p-1.5 shadow-sm focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/30 transition-all">
           <input
             ref={fileInputRef}
             type="file"

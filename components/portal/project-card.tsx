@@ -16,20 +16,8 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { ArrowRight, CalendarDays } from "lucide-react"
-import { PROJECT_STATUS_META, formatDate, type Project } from "@/lib/portal-types"
+import { PROJECT_STATUS_META, formatDate, initials, type Project } from "@/lib/portal-types"
 import { motion } from "framer-motion"
-
-export function initials(name?: string | null) {
-  if (!name) return "??"
-  return name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase()
-}
 
 export function ProjectCard({
   project,
@@ -56,7 +44,7 @@ export function ProjectCard({
       <div className="absolute -inset-0.5 rounded-[26px] bg-gradient-to-br from-primary/30 to-secondary/30 opacity-0 blur transition-all duration-300 group-hover:opacity-100" />
       
       <Link href={`/portal/projects/${project.id}`} className="relative block h-full">
-        <Card className="flex h-full flex-col overflow-hidden rounded-3xl border border-white/50 bg-white/60 shadow-sm backdrop-blur-xl transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_12px_40px_rgba(15,23,42,0.08)]">
+        <Card className="flex h-full flex-col overflow-hidden rounded-3xl border border-border/50 bg-card shadow-sm backdrop-blur-xl transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
           <CardHeader className="pb-2">
             <div className="flex justify-between items-start">
               <div className="flex flex-col gap-1.5">
@@ -105,12 +93,12 @@ export function ProjectCard({
               {team.length > 0 ? (
                 <AvatarGroup>
                   {team.slice(0, 4).map((member) => (
-                    <Avatar key={member.name} size="sm" className="ring-2 ring-white">
+                    <Avatar key={member.name} size="sm" className="ring-2 ring-background">
                       <AvatarFallback>{initials(member.name)}</AvatarFallback>
                     </Avatar>
                   ))}
                   {team.length > 4 && (
-                    <AvatarGroupCount className="ring-2 ring-white">+{team.length - 4}</AvatarGroupCount>
+                    <AvatarGroupCount className="ring-2 ring-background">+{team.length - 4}</AvatarGroupCount>
                   )}
                 </AvatarGroup>
               ) : (
@@ -118,7 +106,7 @@ export function ProjectCard({
               )}
             </div>
           </CardContent>
-          <CardFooter className="mt-auto flex items-center justify-between border-t border-border/40 bg-white/30 px-6 py-4">
+          <CardFooter className="mt-auto flex items-center justify-between border-t border-border/40 bg-muted/30 px-6 py-4">
             <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <CalendarDays className="size-4" />
               Due {formatDate(project.due_date)}

@@ -189,7 +189,7 @@ export function UploadDocuments({
               <li
                 key={`${item.file.name}-${index}`}
                 className={cn(
-                  "flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-white/50 px-3 py-2 text-sm",
+                  "flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/40 px-3 py-2 text-sm",
                   item.status === "error" && "border-destructive/40"
                 )}
               >

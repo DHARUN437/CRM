@@ -138,6 +138,18 @@ export const PROJECT_STATUS_META: Record<
   },
 }
 
+export function initials(name?: string | null) {
+  if (!name) return "??"
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase()
+}
+
 export function formatBytes(bytes: number): string {
   if (!bytes) return "0 B"
   const units = ["B", "KB", "MB", "GB"]
