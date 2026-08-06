@@ -1,51 +1,33 @@
 # Apache Configuration for Next.js Subdomain (lawngreen-alpaca-627630.hostingersite.com)
 
-# Disable Apache MultiViews & UserDir negotiation (prevents Hostinger ~ tilde chunk 404s and stale login.html matches)
-Options -MultiViews
-<IfModule mod_userdir.c>
-  UserDir disabled
-</IfModule>
+DirectoryIndex index.html
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # 1. DO NOT rewrite missing _next static assets to index.html (prevents MIME errors)
-  RewriteCond %{REQUEST_URI} ^/_next/ [OR]
-  RewriteCond %{REQUEST_URI} ^/download/
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteRule ^ - [R=404,L]
-
-  # 2. Explicitly route /login and /portal/login (with or without query strings like ?next=...) to index.html
+  # 1. Route /login and /portal/login directly to index.html with query strings attached
   RewriteRule ^login/?$ index.html [QSA,L]
   RewriteRule ^portal/login/?$ index.html [QSA,L]
 
-  # 3. Do not rewrite static files or directories that exist (images, js, css, download/JoyCRM.apk)
+  # 2. Do not rewrite static files or directories that exist (images, js, css, download/JoyCRM.apk)
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # 4. Fallback to index.html for page navigation routes with Query String Append (QSA)
+  # 3. Fallback to index.html for all client-side SPA routing with Query String Append (QSA)
   RewriteRule ^ index.html [QSA,L]
 </IfModule>
 
 # Serve Android APK files with proper MIME type
 AddType application/vnd.android.package-archive .apk
 
-# Selective Caching Rules:
-# - HTML files & SPA entrypoints: NO CACHE (always fetch fresh HTML)
-# - Next.js hashed static assets (/_next/static/): CACHE IMMUTABLE FOR 1 YEAR
+# Disable caching for HTML files during testing phase
 <IfModule mod_headers.c>
-  # Default for HTML/routes: No Cache
   <FilesMatch "\.(html|htm)$">
     Header set Cache-Control "no-cache, no-store, must-revalidate"
     Header set Pragma "no-cache"
     Header set Expires 0
-  </FilesMatch>
-
-  # Immutable caching for content-hashed Next.js JS/CSS chunks
-  <FilesMatch "\.(js|css|woff2|woff|ttf|eot)$">
-    Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
 </IfModule>
 
