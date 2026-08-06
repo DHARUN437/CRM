@@ -1,0 +1,22 @@
+# Apache Configuration for Next.js CRM Subdomain (crm.speardigital.in)
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Do not rewrite static files or directories that exist
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Fallback to index.html for client-side routing
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# Serve Android APK files with proper MIME type
+AddType application/vnd.android.package-archive .apk
+
+# Enable Gzip Compression for Fast Mobile Loading
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css application/json application/javascript text/javascript
+</IfModule>

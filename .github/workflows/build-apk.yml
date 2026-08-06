@@ -51,7 +51,7 @@ jobs:
             <div class="text">Connecting to JoyCRM...</div>
             <script>
               setTimeout(function() {
-                var target = "http://192.168.1.41:3000";
+                var target = "https://crm.speardigital.in";
                 if (window.location.href !== target) {
                   window.location.replace(target);
                 }
@@ -60,6 +60,7 @@ jobs:
           </body>
           </html>
           EOF
+          export CAPACITOR_SERVER_URL="https://crm.speardigital.in"
           npx cap sync android
 
       - name: Grant Execute Permission for Gradlew
