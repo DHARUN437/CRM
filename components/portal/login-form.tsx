@@ -33,7 +33,14 @@ export function PortalLoginForm() {
     sessionStorage.setItem("auth-booted", "true")
     
     setTimeout(() => {
-      router.push("/portal")
+      const searchParams = new URLSearchParams(window.location.search)
+      const nextTarget = searchParams.get("next")
+
+      if (nextTarget) {
+        router.push(nextTarget)
+      } else {
+        router.push("/portal")
+      }
       router.refresh()
     }, 1500)
   }

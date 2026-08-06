@@ -4,27 +4,37 @@
   RewriteEngine On
   RewriteBase /
 
-  # Explicitly route /login and /portal/login (with or without query parameters like ?next=...) directly to index.html
+  # 1. Explicitly route /login and /portal/login with query strings to index.html
   RewriteRule ^login$ index.html [QSA,L]
   RewriteRule ^portal/login$ index.html [QSA,L]
 
-  # Do not rewrite static files or directories that exist (images, js, css, download/JoyCRM.apk)
+  # 2. Do not rewrite static files or directories that exist (images, js, css, download/JoyCRM.apk)
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # Fallback to index.html for all client-side routing with Query String Append (QSA)
+  # 3. Fallback to index.html for all client-side routing with Query String Append (QSA)
   RewriteRule ^ index.html [QSA,L]
 </IfModule>
 
 # Serve Android APK files with proper MIME type
 AddType application/vnd.android.package-archive .apk
 
-# Disable aggressive browser & mobile webview caching during testing phase
+# Selective Caching Rules:
+# - HTML files & SPA entrypoints: NO CACHE (always fetch fresh HTML)
+# - Next.js hashed static assets (/_next/static/): CACHE IMMUTABLE FOR 1 YEAR
 <IfModule mod_headers.c>
-  Header set Cache-Control "no-cache, no-store, must-revalidate"
-  Header set Pragma "no-cache"
-  Header set Expires 0
+  # Default for HTML/routes: No Cache
+  <FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+  </FilesMatch>
+
+  # Immutable caching for content-hashed Next.js JS/CSS chunks
+  <FilesMatch "\.(js|css|woff2|woff|ttf|eot)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
 </IfModule>
 
 # Enable Gzip Compression for Fast Mobile Loading

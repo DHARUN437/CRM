@@ -41,8 +41,8 @@ export function PortalHeader({ clientId, pendingRequestCount }: PortalHeaderProp
   return (
     <>
       {/* Desktop Floating Navigation */}
-      <header className="hidden sm:flex sticky top-6 z-50 mx-auto w-full max-w-[1700px] px-8">
-        <div className="flex h-[68px] w-full items-center justify-between gap-4 rounded-2xl border border-white/20 bg-white/40 px-6 backdrop-blur-[18px] shadow-layered">
+      <header className="hidden sm:flex sticky top-4 z-50 mx-auto w-full max-w-[1700px] px-8 mt-4">
+        <div className="flex h-[64px] w-full items-center justify-between gap-4 rounded-[20px] border border-white/50 dark:border-[#2A2A38] bg-white/72 dark:bg-[#17171F]/90 px-6 backdrop-blur-[24px] shadow-layered transition-all">
           <div className="flex items-center gap-8">
             <Link href="/portal" className="flex items-center gap-3">
               <Image

@@ -9,6 +9,8 @@ const APP_PREFIXES = [
   "/crm",
   "/team",
   "/clients",
+  "/invoices",
+  "/chat",
 ]
 
 const PORTAL_PREFIXES = ["/portal"]
