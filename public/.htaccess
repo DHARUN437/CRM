@@ -1,4 +1,4 @@
-# Apache Configuration for Next.js CRM Subdomain (crm.speardigital.in)
+# Apache Configuration for Next.js CRM Subdomain (lawngreen-alpaca-627630.hostingersite.com)
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
@@ -15,6 +15,13 @@
 
 # Serve Android APK files with proper MIME type
 AddType application/vnd.android.package-archive .apk
+
+# Disable aggressive browser & mobile webview caching during testing phase
+<IfModule mod_headers.c>
+  Header set Cache-Control "no-cache, no-store, must-revalidate"
+  Header set Pragma "no-cache"
+  Header set Expires 0
+</IfModule>
 
 # Enable Gzip Compression for Fast Mobile Loading
 <IfModule mod_deflate.c>
