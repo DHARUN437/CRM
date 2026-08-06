@@ -51,7 +51,7 @@ jobs:
             <div class="text">Connecting to JoyCRM...</div>
             <script>
               setTimeout(function() {
-                var target = "https://crm.speardigital.in";
+                var target = "https://lawngreen-alpaca-627630.hostingersite.com";
                 if (window.location.href !== target) {
                   window.location.replace(target);
                 }
@@ -60,7 +60,7 @@ jobs:
           </body>
           </html>
           EOF
-          export CAPACITOR_SERVER_URL="https://crm.speardigital.in"
+          export CAPACITOR_SERVER_URL="https://lawngreen-alpaca-627630.hostingersite.com"
           npx cap sync android
 
       - name: Grant Execute Permission for Gradlew
