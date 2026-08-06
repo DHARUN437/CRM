@@ -6,11 +6,13 @@ import { useEffect, useState } from "react"
 interface PendingRequestsBadgeProps {
   clientId: string | null
   initialCount: number
+  className?: string
 }
 
 export function PendingRequestsBadge({
   clientId,
   initialCount,
+  className,
 }: PendingRequestsBadgeProps) {
   const [count, setCount] = useState(initialCount)
 
@@ -77,7 +79,7 @@ export function PendingRequestsBadge({
   if (count <= 0) return null
 
   return (
-    <span className="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground">
+    <span className={`ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground ${className || ""}`}>
       {count}
     </span>
   )

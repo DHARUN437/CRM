@@ -11,8 +11,8 @@ const mockActivities = [
     project: "Web Project",
     time: "5 min ago",
     icon: FileText,
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
+    color: "text-primary dark:text-[#818CF8]",
+    bg: "bg-primary/15 dark:bg-[rgba(99,102,241,0.15)]",
   },
   {
     id: 2,
@@ -20,8 +20,8 @@ const mockActivities = [
     project: "Branding",
     time: "2 hrs ago",
     icon: CreditCard,
-    color: "text-emerald-500",
-    bg: "bg-emerald-500/10",
+    color: "text-success dark:text-[#34D399]",
+    bg: "bg-success/15 dark:bg-[rgba(52,211,153,0.12)]",
   },
   {
     id: 3,
@@ -29,8 +29,8 @@ const mockActivities = [
     project: "Web Project",
     time: "Yesterday",
     icon: CheckCircle,
-    color: "text-purple-500",
-    bg: "bg-purple-500/10",
+    color: "text-primary dark:text-[#818CF8]",
+    bg: "bg-primary/15 dark:bg-[rgba(99,102,241,0.15)]",
   },
   {
     id: 4,
@@ -38,18 +38,18 @@ const mockActivities = [
     project: "Marketing Campaign",
     time: "2 days ago",
     icon: MessageSquare,
-    color: "text-amber-500",
-    bg: "bg-amber-500/10",
+    color: "text-warning dark:text-[#FBBF24]",
+    bg: "bg-warning/15 dark:bg-[rgba(251,191,36,0.12)]",
   },
 ]
 
 export function ActivityFeed() {
   return (
-    <Card className="rounded-2xl border-border/50 bg-white/60 shadow-sm backdrop-blur-xl h-full">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold tracking-tight">Recent Activity</CardTitle>
+    <Card className="rounded-[24px] border border-border/40 dark:border-[#2A2A38] glass-card dark:bg-[#17171F] h-full p-6">
+      <CardHeader className="p-0 pb-4">
+        <CardTitle className="text-base font-bold text-foreground/90 dark:text-[#F4F4F6]">Recent Activity</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-6">
+      <CardContent className="p-0 flex flex-col gap-6">
         {mockActivities.map((activity, i) => (
           <motion.div
             key={activity.id}
@@ -59,18 +59,18 @@ export function ActivityFeed() {
             className="flex gap-4 group"
           >
             <div className="relative flex flex-col items-center">
-              <div className={`flex size-10 shrink-0 items-center justify-center rounded-full ${activity.bg} ${activity.color} ring-4 ring-white shadow-sm z-10 transition-transform group-hover:scale-110`}>
+              <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${activity.bg} ${activity.color} shadow-sm z-10 transition-transform group-hover:scale-110`}>
                 <activity.icon className="size-4" />
               </div>
               {i !== mockActivities.length - 1 && (
-                <div className="absolute top-10 bottom-[-24px] w-px bg-border/60" />
+                <div className="absolute top-10 bottom-[-24px] w-px bg-border/40 dark:bg-[#2A2A38]" />
               )}
             </div>
-            <div className="flex flex-col pt-1">
-              <span className="text-sm font-semibold text-foreground">
+            <div className="flex flex-col pt-1 min-w-0">
+              <span className="text-sm font-bold text-foreground/90 dark:text-[#F4F4F6] truncate">
                 {activity.title}
               </span>
-              <span className="text-xs text-muted-foreground mt-0.5">
+              <span className="text-xs font-semibold text-muted-foreground/80 dark:text-[#9797A8] mt-0.5">
                 {activity.project} • {activity.time}
               </span>
             </div>

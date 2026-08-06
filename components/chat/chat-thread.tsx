@@ -232,7 +232,7 @@ export function ChatThread({
                     <div className="size-8 shrink-0" /> // Spacer
                   )}
                   
-                  <div className={cn("flex flex-col gap-1 max-w-[75%]", mine ? "items-end" : "items-start")}>
+                  <div className={cn("flex flex-col gap-1 max-w-[88%] sm:max-w-[75%]", mine ? "items-end" : "items-start")}>
                     {showAvatar && (
                       <span className="px-1 text-[11px] font-medium text-muted-foreground flex items-center gap-1.5 mb-0.5">
                         {mine ? "You" : message.sender_name ?? "Unknown"}
@@ -245,10 +245,10 @@ export function ChatThread({
 
                     <div
                       className={cn(
-                        "rounded-2xl px-4 py-2.5 text-sm shadow-sm",
+                        "rounded-2xl px-3.5 py-2 text-sm shadow-sm max-w-full break-words",
                         mine
                           ? "rounded-tr-sm bg-primary text-primary-foreground"
-                          : "rounded-tl-sm bg-white/80 border border-white backdrop-blur-md text-foreground"
+                          : "rounded-tl-sm bg-white/80 dark:bg-[#1E1E28] border border-border/40 dark:border-[#2A2A38] text-foreground"
                       )}
                     >
                       {message.body && (
