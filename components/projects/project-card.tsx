@@ -2,7 +2,7 @@ import Link from "next/link"
 import { CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { CalendarDays, MessageSquareText, Users } from "lucide-react"
+import { CalendarDays, Users } from "lucide-react"
 
 interface ProjectCardProps {
   id: string
@@ -12,7 +12,7 @@ interface ProjectCardProps {
   statusBadge: string
   progress: number
   dueDate: string
-  messages: number
+  messages?: number
   workers: number
 }
 
@@ -24,7 +24,6 @@ export function ProjectCard({
   statusBadge,
   progress,
   dueDate,
-  messages,
   workers,
 }: ProjectCardProps) {
   return (
@@ -56,11 +55,7 @@ export function ProjectCard({
           </span>
           <span className="flex items-center gap-1.5">
             <Users className="size-3.5" />
-            {workers}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <MessageSquareText className="size-3.5" />
-            {messages}
+            {workers} assigned
           </span>
         </div>
       </CardContent>

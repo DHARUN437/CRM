@@ -13,6 +13,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -25,6 +35,7 @@ import { useRef, useState } from "react"
 import { CloudUpload, FileUp, Loader2, X } from "lucide-react"
 import type { Project } from "@/lib/portal-types"
 import { cn } from "@/lib/utils"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface UploadDocumentsProps {
   clientId: string
@@ -54,6 +65,7 @@ export function UploadDocuments({
   const [files, setFiles] = useState<PendingFile[]>([])
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const isMobile = useIsMobile()
 
   function onPickFiles(list: FileList | null) {
     if (!list) return
@@ -129,121 +141,152 @@ export function UploadDocuments({
   const selectedProject = projects.find((p) => p.id === projectId)
   const canUpload = projectId && files.length > 0 && !uploading
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button variant={variant}>
-            <CloudUpload className="size-4" />
+  const UploadForm = () => (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="upload-project">Project</Label>
+        <Select
+          value={projectId}
+          onValueChange={(v) => setProjectId(v ?? "")}
+          disabled={Boolean(presetProjectId)}
+        >
+          <SelectTrigger id="upload-project">
+            <SelectValue placeholder="Select a project">
+              {selectedProject?.name ?? (projectId ? "Selected Project" : undefined)}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {projects.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label>Files</Label>
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => onPickFiles(e.target.files)}
+        />
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-4 py-8 text-sm text-primary transition-colors hover:border-primary/60 hover:bg-primary/10"
+        >
+          <FileUp className="size-5" />
+          Click to choose files (PDF, Word, images, archives…)
+        </button>
+
+        {files.length > 0 && (
+          <ul className="flex flex-col gap-2 mt-2">
+            {files.map((item, index) => (
+              <li
+                key={`${item.file.name}-${index}`}
+                className={cn(
+                  "flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-white/50 px-3 py-2 text-sm",
+                  item.status === "error" && "border-destructive/40"
+                )}
+              >
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="truncate">{item.file.name}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {(item.file.size / 1024).toFixed(0)} KB
+                  </span>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  {item.status === "uploading" && (
+                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  )}
+                  {item.status === "done" && (
+                    <span className="text-xs text-success">Uploaded</span>
+                  )}
+                  {item.status === "error" && (
+                    <span className="text-xs text-destructive">{item.error}</span>
+                  )}
+                  {item.status !== "uploading" && (
+                    <button
+                      type="button"
+                      onClick={() => removeFile(index)}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {error && (
+        <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </p>
+      )}
+    </div>
+  )
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerTrigger asChild>
+          <Button variant={variant} className="rounded-full shadow-sm hover:shadow">
+            <CloudUpload className="size-4 mr-2" />
             {label}
           </Button>
-        }
-      />
-      <DialogContent>
+        </DrawerTrigger>
+        <DrawerContent className="px-4">
+          <DrawerHeader className="text-left px-0">
+            <DrawerTitle>Upload documents</DrawerTitle>
+            <DrawerDescription>
+              Files are shared securely with your development team.
+            </DrawerDescription>
+          </DrawerHeader>
+          <UploadForm />
+          <DrawerFooter className="px-0 pt-4 pb-8">
+            <Button onClick={handleUpload} disabled={!canUpload} className="w-full">
+              {uploading && <Loader2 className="size-4 animate-spin mr-2" />}
+              {uploading ? "Uploading…" : "Upload to team"}
+            </Button>
+            <DrawerClose asChild>
+              <Button variant="outline" className="w-full">Cancel</Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant={variant} className="rounded-full shadow-sm hover:shadow">
+          <CloudUpload className="size-4 mr-2" />
+          {label}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px] rounded-3xl p-6">
         <DialogHeader>
           <DialogTitle>Upload documents</DialogTitle>
           <DialogDescription>
             Files are shared securely with your development team.
           </DialogDescription>
         </DialogHeader>
-
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="upload-project">Project</Label>
-            <Select
-              value={projectId}
-              onValueChange={(v) => setProjectId(v ?? "")}
-              disabled={Boolean(presetProjectId)}
-            >
-              <SelectTrigger id="upload-project">
-                <SelectValue placeholder="Select a project">
-                  {selectedProject?.name ?? (projectId ? "Selected Project" : undefined)}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label>Files</Label>
-            <input
-              ref={inputRef}
-              type="file"
-              multiple
-              className="hidden"
-              onChange={(e) => onPickFiles(e.target.files)}
-            />
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-foreground/20 px-4 py-8 text-sm text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
-            >
-              <FileUp className="size-5" />
-              Click to choose files (PDF, Word, images, archives…)
-            </button>
-
-            {files.length > 0 && (
-              <ul className="flex flex-col gap-2">
-                {files.map((item, index) => (
-                  <li
-                    key={`${item.file.name}-${index}`}
-                    className={cn(
-                      "flex items-center justify-between gap-3 rounded-lg border border-foreground/10 px-3 py-2 text-sm",
-                      item.status === "error" && "border-destructive/40"
-                    )}
-                  >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="truncate">{item.file.name}</span>
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {(item.file.size / 1024).toFixed(0)} KB
-                      </span>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      {item.status === "uploading" && (
-                        <Loader2 className="size-4 animate-spin text-muted-foreground" />
-                      )}
-                      {item.status === "done" && (
-                        <span className="text-xs text-success">Uploaded</span>
-                      )}
-                      {item.status === "error" && (
-                        <span className="text-xs text-destructive">{item.error}</span>
-                      )}
-                      {item.status !== "uploading" && (
-                        <button
-                          type="button"
-                          onClick={() => removeFile(index)}
-                          className="text-muted-foreground hover:text-foreground"
-                        >
-                          <X className="size-4" />
-                        </button>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {error && (
-            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error}
-            </p>
-          )}
-        </div>
-
-        <DialogFooter>
+        <UploadForm />
+        <DialogFooter className="mt-4">
           <Button
             onClick={handleUpload}
             disabled={!canUpload}
             className="w-full sm:w-auto"
           >
-            {uploading && <Loader2 className="size-4 animate-spin" />}
+            {uploading && <Loader2 className="size-4 animate-spin mr-2" />}
             {uploading ? "Uploading…" : "Upload to team"}
           </Button>
         </DialogFooter>

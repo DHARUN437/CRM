@@ -4,10 +4,9 @@ import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { getCurrentUser } from "@/lib/supabase/session"
 import { CreateProjectDialog } from "@/components/projects/create-project-dialog"
 import { getClientsForSelect } from "@/lib/clients"
-import { fetchMessageCounts } from "@/lib/messages"
 import { ProjectCard } from "@/components/projects/project-card"
 import { Card, CardContent } from "@/components/ui/card"
-import { FolderKanban, LoaderPinwheel, MessageSquareText, Users } from "lucide-react"
+import { FolderKanban, LoaderPinwheel, CheckCircle2, Users } from "lucide-react"
 import { PROJECT_STATUS_META, formatDate, type ProjectStatus } from "@/lib/portal-types"
 
 export const dynamic = "force-dynamic"
@@ -84,13 +83,12 @@ export default async function ProjectsPage() {
   }
 
   const projectIds = (projects ?? []).map((p) => p.id)
-  const [{ data: assignments }, messageCounts, { data: teamLeads }, clientList] = await Promise.all([
+  const [{ data: assignments }, { data: teamLeads }, clientList] = await Promise.all([
     isAdmin
       ? supabase
           .from("project_assignments")
           .select("project_id, team_members(name, role)")
       : { data: [] },
-    fetchMessageCounts(supabase, projectIds),
     isAdmin
       ? supabase
           .from("team_members")
@@ -121,14 +119,12 @@ export default async function ProjectsPage() {
     {
       label: "Completed",
       value: projects?.filter((p) => p.status === "completed").length ?? 0,
-      icon: Users,
+      icon: CheckCircle2,
     },
     {
-      label: "Messages",
-      value: messageCounts.size
-        ? Array.from(messageCounts.values()).reduce((a, b) => a + b, 0)
-        : 0,
-      icon: MessageSquareText,
+      label: "On hold / Kickoff",
+      value: projects?.filter((p) => p.status === "kickoff" || p.status === "on_hold").length ?? 0,
+      icon: Users,
     },
   ]
 
@@ -198,7 +194,6 @@ export default async function ProjectsPage() {
                 statusBadge={meta.badge}
                 progress={project.progress}
                 dueDate={formatDate(project.due_date)}
-                messages={messageCounts.get(project.id) ?? 0}
                 workers={assignmentCounts.get(project.id) ?? 0}
               />
             )

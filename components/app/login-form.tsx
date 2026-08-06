@@ -1,12 +1,10 @@
 "use client"
 
 import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Loader2, Mail, Lock, Eye, EyeOff, AlertCircle, ArrowRight } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 
 export function LoginForm() {
   const router = useRouter()
@@ -34,102 +32,151 @@ export function LoginForm() {
       return
     }
 
-    if (user?.app_metadata?.role === "client") {
-      router.push("/portal")
-    } else {
-      router.push("/dashboard")
-    }
-    router.refresh()
+    // Trigger post-login animation sequence
+    window.dispatchEvent(new Event("auth-success"))
+    sessionStorage.setItem("auth-booted", "true")
+    
+    setTimeout(() => {
+      if (user?.app_metadata?.role === "client") {
+        router.push("/portal")
+      } else {
+        router.push("/dashboard")
+      }
+      router.refresh()
+    }, 1500)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full mt-4">
+      <div className="relative group">
+        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-4.5 text-slate-500 transition-colors group-focus-within:text-[#7C6DFF] z-10" />
+        <input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          autoComplete="email"
+          placeholder=" "
+          className="peer h-14 w-full rounded-xl border border-white/10 bg-black/20 pl-11 pr-4 text-sm text-white transition-all duration-300 hover:border-white/20 focus:border-[#7C6DFF]/50 focus:bg-black/40 focus:outline-none focus:ring-4 focus:ring-[#7C6DFF]/10 backdrop-blur-sm"
+        />
+        <label 
+          htmlFor="email" 
+          className="absolute left-11 top-1/2 -translate-y-1/2 text-sm text-slate-500 transition-all duration-300 peer-focus:-translate-y-7 peer-focus:text-xs peer-focus:text-[#7C6DFF] peer-focus:font-medium peer-[:not(:placeholder-shown)]:-translate-y-7 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-slate-400 pointer-events-none"
+        >
           Email Address
-        </Label>
-        <div className="relative flex items-center">
-          <Mail className="absolute left-3.5 size-4 text-muted-foreground/60 transition-colors group-focus-within:text-primary" />
-          <Input
-            id="email"
-            type="email"
-            placeholder="name@company.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-            className="h-11 border-white/10 bg-black/40 pl-10 pr-4 text-sm tracking-wide text-foreground transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/50 focus:bg-black/60 focus:ring-2 focus:ring-primary/20"
-          />
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">
-            Password
-          </Label>
-        </div>
-        <div className="relative flex items-center">
-          <Lock className="absolute left-3.5 size-4 text-muted-foreground/60 transition-colors group-focus-within:text-primary" />
-          <Input
-            id="password"
-            type={showPassword ? "text" : "password"}
-            placeholder="••••••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-            className="h-11 border-white/10 bg-black/40 pl-10 pr-10 text-sm tracking-wide text-foreground transition-all duration-200 placeholder:text-muted-foreground/50 focus:border-primary/50 focus:bg-black/60 focus:ring-2 focus:ring-primary/20"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 text-muted-foreground/60 hover:text-foreground transition-colors p-1 rounded-md"
-            tabIndex={-1}
-            aria-label={showPassword ? "Hide password" : "Show password"}
-          >
-            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-          </button>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <label className="flex items-center gap-2 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-            className="size-3.5 rounded border-white/20 bg-black/40 text-primary accent-primary focus:ring-primary/20"
-          />
-          <span>Keep me signed in</span>
         </label>
       </div>
 
-      {error && (
-        <div className="flex items-center gap-2.5 rounded-xl border border-destructive/30 bg-destructive/10 px-3.5 py-2.5 text-xs font-medium text-destructive animate-fade-up">
-          <AlertCircle className="size-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
+      <div className="relative group">
+        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4.5 text-slate-500 transition-colors group-focus-within:text-[#7C6DFF] z-10" />
+        <input
+          id="password"
+          type={showPassword ? "text" : "password"}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          autoComplete="current-password"
+          placeholder=" "
+          className="peer h-14 w-full rounded-xl border border-white/10 bg-black/20 pl-11 pr-11 text-sm text-white transition-all duration-300 hover:border-white/20 focus:border-[#7C6DFF]/50 focus:bg-black/40 focus:outline-none focus:ring-4 focus:ring-[#7C6DFF]/10 backdrop-blur-sm"
+        />
+        <label 
+          htmlFor="password" 
+          className="absolute left-11 top-1/2 -translate-y-1/2 text-sm text-slate-500 transition-all duration-300 peer-focus:-translate-y-7 peer-focus:text-xs peer-focus:text-[#7C6DFF] peer-focus:font-medium peer-[:not(:placeholder-shown)]:-translate-y-7 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-slate-400 pointer-events-none"
+        >
+          Password
+        </label>
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5"
+          tabIndex={-1}
+        >
+          {showPassword ? <EyeOff className="size-4.5" /> : <Eye className="size-4.5" />}
+        </button>
+      </div>
 
-      <Button
-        type="submit"
-        disabled={loading}
-        className="mt-2 h-11 w-full bg-primary font-medium text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 hover:bg-primary/90 hover:shadow-primary/40 active:scale-[0.99] disabled:opacity-70"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="mr-2 size-4 animate-spin" />
-            Authenticating...
-          </>
-        ) : (
-          <span className="flex items-center justify-center gap-2">
-            Sign In to Workspace
-            <ArrowRight className="size-4" />
-          </span>
+      <div className="flex items-center justify-between text-sm text-slate-400">
+        <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+          <div className="relative flex items-center justify-center size-4">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="peer absolute inset-0 opacity-0 cursor-pointer"
+            />
+            <div className="size-4 rounded-[4px] border border-white/20 bg-black/20 transition-all peer-checked:bg-[#7C6DFF] peer-checked:border-[#7C6DFF] peer-hover:border-white/40 peer-focus-visible:ring-2 peer-focus-visible:ring-[#7C6DFF]/40" />
+            <motion.svg
+              initial={false}
+              animate={{ opacity: rememberMe ? 1 : 0, scale: rememberMe ? 1 : 0.5 }}
+              className="absolute size-3 text-white pointer-events-none"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </motion.svg>
+          </div>
+          <span className="group-hover:text-slate-300 transition-colors">Keep me signed in</span>
+        </label>
+      </div>
+
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-400 shadow-inner backdrop-blur-md"
+          >
+            <AlertCircle className="size-4.5 shrink-0" />
+            <span>{error}</span>
+          </motion.div>
         )}
-      </Button>
+      </AnimatePresence>
+
+      <div className="flex justify-center w-full mt-4">
+        <motion.button
+          animate={{
+            width: loading ? "56px" : "100%",
+            borderRadius: loading ? "28px" : "12px",
+          }}
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          whileHover={!loading ? { scale: 1.01 } : {}}
+          whileTap={!loading ? { scale: 0.98 } : {}}
+          type="submit"
+          disabled={loading}
+          className="relative group h-14 overflow-hidden bg-gradient-to-r from-[#7B6EFF] to-[#5D5FEF] font-semibold text-white shadow-[0_0_20px_rgba(123,110,255,0.3)] transition-all hover:shadow-[0_0_30px_rgba(123,110,255,0.6)] disabled:opacity-90 disabled:cursor-wait flex items-center justify-center"
+        >
+          <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+          <AnimatePresence mode="wait">
+            {loading ? (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0 }}
+              >
+                <Loader2 className="size-5 animate-spin" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="default"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="relative flex items-center justify-center gap-2 w-full px-6"
+              >
+                Sign In to Workspace
+                <ArrowRight className="size-4.5 transition-transform group-hover:translate-x-1" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
+      </div>
     </form>
   )
 }
-

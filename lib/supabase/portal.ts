@@ -22,8 +22,8 @@ export async function getActiveClient(
       .eq("user_id", user.id)
       .maybeSingle()
 
-    if (error) {
-      console.error("Error fetching client by user_id:", error)
+    if (error && error.code !== "PGRST116") {
+      console.error("Error fetching client by user_id:", error.message || error)
     }
 
     // 2. Fallback: Try matching by email

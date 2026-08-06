@@ -1,15 +1,15 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { LayoutGrid, FolderKanban, Files, Receipt, FileQuestion, LogOut, Menu, X } from "lucide-react"
+import { LayoutGrid, FolderKanban, Files, Receipt, FileQuestion, LogOut, Search, Bell } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { motion } from "framer-motion"
 import { PendingRequestsBadge } from "@/components/portal/pending-requests-badge"
 
-const links = [
+export const portalLinks = [
   { label: "Overview", href: "/portal", icon: LayoutGrid },
   { label: "Projects", href: "/portal/projects", icon: FolderKanban },
   { label: "Requests", href: "/portal/requests", icon: FileQuestion },
@@ -17,7 +17,7 @@ const links = [
   { label: "Invoices", href: "/portal/invoices", icon: Receipt },
 ]
 
-function isActive(pathname: string, href: string) {
+export function isActive(pathname: string, href: string) {
   return href === "/portal" ? pathname === "/portal" : pathname.startsWith(href)
 }
 
@@ -29,10 +29,8 @@ interface PortalHeaderProps {
 export function PortalHeader({ clientId, pendingRequestCount }: PortalHeaderProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const [menuOpen, setMenuOpen] = useState(false)
 
   async function signOut() {
-    setMenuOpen(false)
     const { createClient } = await import("@/lib/supabase/client")
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -40,116 +38,106 @@ export function PortalHeader({ clientId, pendingRequestCount }: PortalHeaderProp
     router.refresh()
   }
 
-  function handleNavigate(href: string) {
-    setMenuOpen(false)
-    router.push(href)
-  }
-
   return (
-    <header className="sticky top-0 z-50 border-b border-foreground/10 bg-background/90 backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-        <div className="flex items-center gap-6">
-          <Link href="/portal" className="flex items-center gap-2.5">
-            <Image
-              src="/logo.png"
-              alt="JoyCRM Logo"
-              width={32}
-              height={32}
-              className="size-8 rounded-full object-cover"
-            />
-            <span className="text-sm font-semibold tracking-tight">
-              JoyCRM <span className="text-muted-foreground">Client Portal</span>
-            </span>
-          </Link>
+    <>
+      {/* Desktop Floating Navigation */}
+      <header className="hidden sm:flex sticky top-6 z-50 mx-auto w-full max-w-[1700px] px-8">
+        <div className="flex h-[68px] w-full items-center justify-between gap-4 rounded-2xl border border-white/20 bg-white/40 px-6 backdrop-blur-[18px] shadow-layered">
+          <div className="flex items-center gap-8">
+            <Link href="/portal" className="flex items-center gap-3">
+              <Image
+                src="/logo.png"
+                alt="JoyCRM Logo"
+                width={36}
+                height={36}
+                className="size-9 rounded-xl object-cover shadow-sm"
+              />
+              <span className="text-base font-bold tracking-tight text-foreground">
+                JoyCRM <span className="text-muted-foreground font-medium">Enterprise</span>
+              </span>
+            </Link>
 
-          <nav className="hidden items-center gap-1 sm:flex">
-            {links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground",
-                  isActive(pathname, link.href) && "bg-foreground/5 text-foreground font-medium"
-                )}
-              >
-                <link.icon className="size-4" />
-                {link.label}
-                {link.href === "/portal/requests" && clientId && (
-                  <PendingRequestsBadge
-                    clientId={clientId}
-                    initialCount={pendingRequestCount}
-                  />
-                )}
-              </Link>
-            ))}
-          </nav>
+            <nav className="flex items-center gap-1">
+              {portalLinks.map((link) => {
+                const active = isActive(pathname, link.href)
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="relative flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors"
+                  >
+                    {active && (
+                      <motion.div
+                        layoutId="active-nav-pill"
+                        className="absolute inset-0 rounded-full bg-primary/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.5)]"
+                        initial={false}
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                    <span className={cn("relative z-10 flex items-center gap-2", active ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
+                      <link.icon className="size-4" />
+                      {link.label}
+                      {link.href === "/portal/requests" && clientId && (
+                        <PendingRequestsBadge
+                          clientId={clientId}
+                          initialCount={pendingRequestCount}
+                        />
+                      )}
+                    </span>
+                  </Link>
+                )
+              })}
+            </nav>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-foreground">
+              <Search className="size-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-foreground">
+              <Bell className="size-5" />
+            </Button>
+            <div className="h-6 w-px bg-border mx-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={signOut}
+              className="rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="size-4 mr-2" />
+              Sign out
+            </Button>
+          </div>
         </div>
+      </header>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={signOut}
-            className="hidden items-center gap-2 sm:flex"
-          >
-            <LogOut className="size-4" />
-            Sign out
+      {/* Mobile Compact Header */}
+      <header className="sm:hidden sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b border-white/10 bg-white/60 px-4 backdrop-blur-xl">
+        <Link href="/portal" className="flex items-center gap-2">
+          <Image
+            src="/logo.png"
+            alt="JoyCRM Logo"
+            width={32}
+            height={32}
+            className="size-8 rounded-lg object-cover shadow-sm"
+          />
+          <span className="text-sm font-bold tracking-tight text-foreground">JoyCRM</span>
+        </Link>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="text-muted-foreground">
+            <Search className="size-5" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="sm:hidden"
-            aria-label={menuOpen ? "Close navigation" : "Open navigation"}
-            onClick={() => setMenuOpen((o) => !o)}
-          >
-            {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+          <Button variant="ghost" size="icon" className="relative text-muted-foreground">
+            <Bell className="size-5" />
+            {pendingRequestCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-primary" />
+            )}
+          </Button>
+          <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={signOut}>
+            <LogOut className="size-5" />
           </Button>
         </div>
-      </div>
-
-      {menuOpen && (
-        <div className="fixed inset-x-0 top-14 z-50 border-b border-foreground/10 bg-background/95 p-4 shadow-2xl backdrop-blur-xl sm:hidden animate-in fade-in-0 slide-in-from-top-2">
-          <nav className="flex flex-col gap-1">
-            {links.map((link) => {
-              const active = isActive(pathname, link.href)
-              return (
-                <button
-                  key={link.href}
-                  type="button"
-                  onClick={() => handleNavigate(link.href)}
-                  className={cn(
-                    "flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors touch-target",
-                    active
-                      ? "bg-primary/10 text-primary font-semibold"
-                      : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <link.icon className="size-5 shrink-0" />
-                    <span>{link.label}</span>
-                  </div>
-                  {link.href === "/portal/requests" && clientId && (
-                    <PendingRequestsBadge
-                      clientId={clientId}
-                      initialCount={pendingRequestCount}
-                    />
-                  )}
-                </button>
-              )
-            })}
-            <div className="mt-2 border-t border-foreground/10 pt-2">
-              <button
-                type="button"
-                onClick={signOut}
-                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-destructive hover:bg-destructive/10 touch-target"
-              >
-                <LogOut className="size-5 shrink-0" />
-                <span>Sign out</span>
-              </button>
-            </div>
-          </nav>
-        </div>
-      )}
-    </header>
+      </header>
+    </>
   )
 }

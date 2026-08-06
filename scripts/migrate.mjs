@@ -55,6 +55,8 @@ const MIGRATIONS = [
   "feature-requests-fix.sql",
   "team-chat.sql",
   "team-chat-reads.sql",
+  "fix-clients-recursion.sql",
+  "fix-clients-recursion-2.sql",
 ]
 
 async function run(sql) {

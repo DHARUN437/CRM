@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { getCurrentUser } from "@/lib/supabase/session"
 import { getClientsForSelect } from "@/lib/clients"
-import { fetchMessages } from "@/lib/messages"
 import { ProjectStatusUpdater } from "@/components/projects/project-status"
 import { AssignWorkers } from "@/components/projects/assign-workers"
 import { RequestDocumentDialog } from "@/components/projects/request-document-dialog"
@@ -12,7 +11,6 @@ import { UploadProjectDocuments } from "@/components/projects/upload-project-doc
 import { CreateTaskDialog } from "@/components/projects/create-task-dialog"
 import { TaskBoard } from "@/components/projects/task-board"
 import { FeatureRequestsLive } from "@/components/projects/feature-requests-live"
-import { ChatThread } from "@/components/chat/chat-thread"
 import { DocumentPreviewLink } from "@/components/portal/document-preview-link"
 import { LogTimeDialog } from "@/components/projects/log-time-dialog"
 import { ProjectTimesheet } from "@/components/projects/project-timesheet"
@@ -35,7 +33,6 @@ import {
   Layers,
   ListTodo,
   Lightbulb,
-  MessageSquareText,
   PackageOpen,
   Receipt,
   TrendingUp,
@@ -135,7 +132,6 @@ export default async function ProjectDetailPage({
   let [
     { data: assignments },
     { data: documents },
-    messages,
     { data: workers },
     { data: requests },
     { data: features },
@@ -156,7 +152,6 @@ export default async function ProjectDetailPage({
       .select("*")
       .eq("project_id", id)
       .order("created_at", { ascending: false }),
-    fetchMessages(supabase, id),
     // Workers for assignment picker — available to admin and TL
     canManageTeam
       ? supabase
@@ -400,25 +395,6 @@ export default async function ProjectDetailPage({
               <Progress value={project.progress} className="h-2" />
             </CardContent>
           </Card>
-
-          <section className="flex flex-col gap-3">
-            <CardHeader className="px-0 pb-0">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <MessageSquareText className="size-4" />
-                Project chat
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Chat with your team and the client in real-time — attach files to any message.
-              </p>
-            </CardHeader>
-            <ChatThread
-              projectId={id}
-              messages={messages}
-              currentUserId={user.id}
-              currentName={myName}
-              currentRole={user.role === "worker" ? "worker" : "team"}
-            />
-          </section>
 
           <section className="flex flex-col gap-4">
             <div className="flex items-center justify-between">

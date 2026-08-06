@@ -5,10 +5,12 @@ import { optimizeFileForUpload, CDN_UPLOAD_OPTIONS } from "@/lib/media-optimizat
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { useEffect, useRef, useState } from "react"
-import { Loader2, Paperclip, Send, FileText, X } from "lucide-react"
+import { Loader2, Paperclip, Send, FileText, X, MessageSquareText } from "lucide-react"
 import type { ProjectMessage } from "@/lib/portal-types"
 import { cn } from "@/lib/utils"
 import { formatMessageTime, formatBytes } from "@/lib/portal-types"
+import { Badge } from "@/components/ui/badge"
+import { initials } from "@/components/portal/project-card"
 
 interface ChatThreadProps {
   projectId: string
@@ -194,63 +196,77 @@ export function ChatThread({
   }
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-foreground/10">
-      <div className="flex max-h-[420px] min-h-[280px] flex-col gap-4 overflow-y-auto p-4">
+    <div className="flex flex-col overflow-hidden rounded-3xl border border-white/50 bg-white/60 shadow-sm backdrop-blur-xl">
+      <div className="flex max-h-[420px] min-h-[360px] flex-col gap-4 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-foreground/10">
         {!messages.length ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-center text-sm text-muted-foreground">
-            <Send className="size-6 text-muted-foreground/40" />
-            <p>
-              No messages yet — say hello and kick off the conversation with
-              your team.
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 py-10 text-center">
+            <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-2 ring-8 ring-primary/5">
+              <MessageSquareText className="size-6" />
+            </div>
+            <p className="text-sm font-medium text-foreground">
+              No messages yet
+            </p>
+            <p className="text-xs text-muted-foreground max-w-xs">
+              Say hello and kick off the conversation with your team.
             </p>
           </div>
         ) : (
-          messages.map((message) => {
+          messages.map((message, idx) => {
             const mine = message.sender_id === currentUserId
+            const showAvatar = idx === 0 || messages[idx - 1].sender_id !== message.sender_id
+
             return (
               <div
                   key={message.id}
                   className={cn(
-                    "flex flex-col gap-1",
-                    mine ? "items-end" : "items-start"
+                    "flex gap-3",
+                    mine ? "flex-row-reverse" : "flex-row",
+                    !showAvatar && "mt-[-12px]"
                   )}
                 >
-                  <div
-                    className={cn(
-                      "max-w-[80%] rounded-2xl px-3.5 py-2 text-sm",
-                      mine
-                        ? "rounded-br-md bg-primary text-primary-foreground"
-                        : "rounded-bl-md bg-foreground/5 text-foreground"
+                  {showAvatar ? (
+                    <div className="flex shrink-0 size-8 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/10 text-[11px] font-bold text-primary ring-2 ring-white">
+                      {initials(message.sender_name)}
+                    </div>
+                  ) : (
+                    <div className="size-8 shrink-0" /> // Spacer
+                  )}
+                  
+                  <div className={cn("flex flex-col gap-1 max-w-[75%]", mine ? "items-end" : "items-start")}>
+                    {showAvatar && (
+                      <span className="px-1 text-[11px] font-medium text-muted-foreground flex items-center gap-1.5 mb-0.5">
+                        {mine ? "You" : message.sender_name ?? "Unknown"}
+                        {message.sender_role === "client" && <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 rounded bg-background/50">Client</Badge>}
+                        {message.sender_role === "team" && <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 rounded bg-primary/10 text-primary border-primary/20">Admin</Badge>}
+                        {message.sender_role === "worker" && <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 rounded bg-secondary/10 text-secondary border-secondary/20">Worker</Badge>}
+                        <span className="opacity-50">· {formatMessageTime(message.created_at)}</span>
+                      </span>
                     )}
-                  >
-                    {message.body && (
-                      <p className="whitespace-pre-wrap break-words">
-                        {message.body}
-                      </p>
-                    )}
-                    {message.attachment_url && (
-                      <AttachmentPreview
-                        url={message.attachment_url}
-                        name={message.attachment_name}
-                        type={message.attachment_type}
-                        size={message.attachment_size}
-                        isOwn={mine}
-                      />
-                    )}
+
+                    <div
+                      className={cn(
+                        "rounded-2xl px-4 py-2.5 text-sm shadow-sm",
+                        mine
+                          ? "rounded-tr-sm bg-primary text-primary-foreground"
+                          : "rounded-tl-sm bg-white/80 border border-white backdrop-blur-md text-foreground"
+                      )}
+                    >
+                      {message.body && (
+                        <p className="whitespace-pre-wrap break-words leading-relaxed">
+                          {message.body}
+                        </p>
+                      )}
+                      {message.attachment_url && (
+                        <AttachmentPreview
+                          url={message.attachment_url}
+                          name={message.attachment_name}
+                          type={message.attachment_type}
+                          size={message.attachment_size}
+                          isOwn={mine}
+                        />
+                      )}
+                    </div>
                   </div>
-                  <span className="px-1 text-[11px] text-muted-foreground">
-                    {message.sender_name ?? "Unknown"}{" "}
-                    {message.sender_role === "client" && (
-                      <span className="font-medium">· Client</span>
-                    )}
-                    {message.sender_role === "team" && (
-                      <span className="font-medium">· Admin</span>
-                    )}
-                    {message.sender_role === "worker" && (
-                      <span className="font-medium">· Worker</span>
-                    )}{" "}
-                    · {formatMessageTime(message.created_at)}
-                  </span>
                 </div>
             )
           })
@@ -258,23 +274,23 @@ export function ChatThread({
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t border-foreground/10 bg-muted/30 p-3">
+      <div className="border-t border-white/40 bg-white/40 p-4 backdrop-blur-md">
         {pendingFile && (
-          <div className="mb-2 flex items-center gap-2 rounded-lg border border-foreground/10 bg-background px-3 py-2 text-xs">
-            <FileText className="size-4 shrink-0 text-muted-foreground" />
-            <span className="truncate">{pendingFile.name}</span>
+          <div className="mb-3 flex items-center gap-3 rounded-xl border border-white/60 bg-white/80 px-4 py-2.5 text-xs shadow-sm">
+            <FileText className="size-4 shrink-0 text-primary" />
+            <span className="truncate font-medium">{pendingFile.name}</span>
             <span className="shrink-0 text-muted-foreground">
               {formatBytes(pendingFile.size)}
             </span>
             <button
               onClick={() => setPendingFile(null)}
-              className="ml-auto shrink-0 text-muted-foreground hover:text-foreground"
+              className="ml-auto shrink-0 flex items-center justify-center size-6 rounded-full bg-foreground/5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
             >
-              <X className="size-3" />
+              <X className="size-3.5" />
             </button>
           </div>
         )}
-        <div className="flex items-end gap-2">
+        <div className="flex items-end gap-3 bg-white/60 rounded-2xl border border-white/60 p-1.5 shadow-sm focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/30 transition-all">
           <input
             ref={fileInputRef}
             type="file"
@@ -287,11 +303,11 @@ export function ChatThread({
           />
           <Button
             variant="ghost"
-            size="icon-sm"
-            className="shrink-0 text-muted-foreground hover:text-foreground"
+            size="icon"
+            className="shrink-0 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-xl h-10 w-10 mb-0.5"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Paperclip className="size-4" />
+            <Paperclip className="size-5" />
           </Button>
           <Textarea
             value={draft}
@@ -307,20 +323,20 @@ export function ChatThread({
                 ? "Add a message (optional)…"
                 : "Type a message… (Enter to send)"
             }
-            className="min-h-10 max-h-32 flex-1"
+            className="min-h-[44px] max-h-32 flex-1 resize-none border-0 bg-transparent px-2 py-3 text-sm focus-visible:ring-0 shadow-none"
             rows={1}
           />
           <Button
             onClick={send}
             disabled={(!draft.trim() && !pendingFile) || sending}
-            size="sm"
+            size="icon"
+            className="shrink-0 rounded-xl h-10 w-10 mb-0.5 shadow-sm transition-transform active:scale-95"
           >
             {sending ? (
-              <Loader2 className="size-4 animate-spin" />
+              <Loader2 className="size-5 animate-spin" />
             ) : (
-              <Send className="size-4" />
+              <Send className="size-5 ml-0.5" />
             )}
-            Send
           </Button>
         </div>
       </div>
