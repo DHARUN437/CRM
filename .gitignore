@@ -14,13 +14,20 @@ __v0_jsx-dev-runtime.ts
 # Common ignores
 node_modules/
 .next/
+out/
+.cache/
 .DS_Store
 *.pem
+.tempmediaStorage/
 
-# Dev server logs
+# Dev server logs & logs
 dev-server.log
 dev-server-err.log
 *.log
+
+# Mobile & build artifacts
+*.apk
+*.aab
 
 # TypeScript build cache
 tsconfig.tsbuildinfo
