@@ -9,6 +9,9 @@ export const dynamic = "force-dynamic"
 export default async function EODReportPage() {
   const user = await getCurrentUser()
   if (!user) redirect("/login")
+  if (user.role !== "team" && user.role !== "tl" && user.role !== "worker") {
+    redirect("/portal")
+  }
 
   const supabase = await createClient()
   const todayStr = new Date().toISOString().split("T")[0]

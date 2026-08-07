@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 import StatusPill, { StatusType } from './status-pill'
 import { avatarColor } from '@/lib/crm'
 
@@ -71,9 +72,11 @@ export const DealsTable: React.FC<DealsTableProps> = ({ deals }) => {
                   <td className="py-3.5 px-3">
                     <div className="flex items-center gap-2.5">
                       {deal.owner.avatar ? (
-                        <img
+                        <Image
                           src={deal.owner.avatar}
                           alt={deal.owner.name}
+                          width={24}
+                          height={24}
                           className="w-6 h-6 rounded-full object-cover border border-[var(--border)]/60"
                         />
                       ) : (

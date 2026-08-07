@@ -3,10 +3,9 @@
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Calendar, FileText, HardDrive, AlertCircle, UserX, ExternalLink } from "lucide-react"
+import { FileText, HardDrive, UserX, ExternalLink } from "lucide-react"
 
 export interface EODReportItem {
   id: string

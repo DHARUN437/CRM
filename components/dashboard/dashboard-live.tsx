@@ -4,19 +4,24 @@ import { useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 
-const REFRESH_DEBOUNCE_MS = 750
+const REFRESH_DEBOUNCE_MS = 1000
+const MOUNT_GUARD_MS = 2500
 
 export function DashboardRealtimeSync() {
   const router = useRouter()
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isMountedRef = useRef(false)
 
   useEffect(() => {
+    // Prevent initial realtime channel subscription handshake from triggering router.refresh()
+    const guardTimer = setTimeout(() => {
+      isMountedRef.current = true
+    }, MOUNT_GUARD_MS)
+
     const supabase = createClient()
 
-    // Coalesce bursts of realtime events (e.g. a task board update touching
-    // tasks + activity_logs together) into a single router.refresh() instead
-    // of one full server re-render per event.
     const requestRefresh = () => {
+      if (!isMountedRef.current) return
       if (refreshTimer.current) return
       refreshTimer.current = setTimeout(() => {
         refreshTimer.current = null
@@ -74,6 +79,7 @@ export function DashboardRealtimeSync() {
       .subscribe()
 
     return () => {
+      clearTimeout(guardTimer)
       if (refreshTimer.current) clearTimeout(refreshTimer.current)
       supabase.removeChannel(channel)
     }

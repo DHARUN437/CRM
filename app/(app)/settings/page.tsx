@@ -1,12 +1,11 @@
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/supabase/session"
 import { getGoogleDriveStatus } from "@/lib/google-drive"
 import { GoogleDriveCard } from "@/components/settings/google-drive-card"
 import { ChangePasswordCard } from "@/components/settings/change-password-card"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { User, ShieldCheck, Mail, Lock } from "lucide-react"
+import { User } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
@@ -20,11 +19,11 @@ interface SettingsPageProps {
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   const user = await getCurrentUser()
   if (!user) redirect("/login")
+  if (user.role === "client") redirect("/portal")
 
   const resolvedSearchParams = await searchParams
   const isAdmin = user.role === "team"
   const isTL = user.role === "tl"
-  const isWorker = user.role === "worker"
 
   const driveStatus = isAdmin ? await getGoogleDriveStatus() : null
 

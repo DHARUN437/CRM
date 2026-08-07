@@ -1,7 +1,5 @@
 "use client"
 
-import { motion } from "framer-motion"
-
 export function AppBackground() {
   return (
     <div className="fixed inset-0 z-[-1] overflow-hidden bg-[var(--background)] pointer-events-none">

@@ -65,7 +65,7 @@ export async function GET(request: Request) {
  * and updates monthly_tasks progress (capped at 95% for EODs, 100% for explicit completion).
  */
 async function syncTaskProgress(
-  supabase: any,
+  supabase: Awaited<ReturnType<typeof createClient>>,
   taskId: string,
   forceCompleted: boolean = false,
   reportId?: string
@@ -106,7 +106,7 @@ async function syncTaskProgress(
     .select("work_date")
     .eq("monthly_task_id", taskId)
 
-  const uniqueDates = new Set((updates || []).map((u: any) => u.work_date))
+  const uniqueDates = new Set((updates || []).map((u: { work_date: string | null }) => u.work_date))
   const newProgress = Math.min(95, Math.round(uniqueDates.size * dailyIncrement))
 
   await supabase
@@ -186,14 +186,22 @@ export async function POST(request: Request) {
 
   // 3. Insert Attachments
   if (attachments && attachments.length > 0) {
-    const attachmentRows = attachments.map((att: any) => ({
-      eod_report_id: report.id,
-      google_drive_file_id: att.google_drive_file_id,
-      file_name: att.file_name,
-      file_url: att.file_url,
-      file_size: att.file_size,
-      mime_type: att.mime_type,
-    }))
+    const attachmentRows = attachments.map(
+      (att: {
+        google_drive_file_id: string
+        file_name: string
+        file_url: string
+        file_size?: number | null
+        mime_type?: string | null
+      }) => ({
+        eod_report_id: report.id,
+        google_drive_file_id: att.google_drive_file_id,
+        file_name: att.file_name,
+        file_url: att.file_url,
+        file_size: att.file_size,
+        mime_type: att.mime_type,
+      })
+    )
 
     await supabase.from("eod_report_attachments").insert(attachmentRows)
   }
@@ -202,7 +210,13 @@ export async function POST(request: Request) {
   await supabase.from("eod_task_updates").delete().eq("eod_entry_id", report.id)
 
   if (taskUpdates && taskUpdates.length > 0) {
-    const workSessionRows: any[] = []
+    const workSessionRows: {
+      eod_entry_id: string
+      monthly_task_id: string
+      employee_id: string
+      work_date: string
+      note: string | null
+    }[] = []
 
     for (const update of taskUpdates as { taskId: string; markedCompleted: boolean; note?: string }[]) {
       affectedTaskIds.add(update.taskId)
@@ -232,7 +246,12 @@ export async function POST(request: Request) {
 
   // 5. Recalculate auto-incrementing progress & status for all affected tasks
   for (const taskId of affectedTaskIds) {
-    const updateItem = (taskUpdates as any[]).find((t) => t.taskId === taskId)
+    const taskUpdateList = taskUpdates as {
+      taskId: string
+      markedCompleted: boolean
+      note?: string
+    }[]
+    const updateItem = taskUpdateList.find((t) => t.taskId === taskId)
     await syncTaskProgress(supabase, taskId, Boolean(updateItem?.markedCompleted), report.id)
   }
 

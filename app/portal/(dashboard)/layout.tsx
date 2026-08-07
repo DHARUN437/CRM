@@ -2,13 +2,23 @@ import { PortalHeader } from "@/components/portal/portal-header"
 import { PortalShell } from "@/components/portal/portal-shell"
 import { getActiveClient, getPendingRequestCount } from "@/lib/supabase/portal"
 import { createClient } from "@/lib/supabase/server"
+import { getCurrentUser } from "@/lib/supabase/session"
+import { redirect } from "next/navigation"
+import dynamic from "next/dynamic"
 import { AppBackground } from "@/components/ui/app-background"
 import { MobileBottomNav } from "@/components/portal/mobile-bottom-nav"
-import { CommandPalette } from "@/components/portal/command-palette"
 import { PortalRealtimeSync } from "@/components/portal/portal-live"
+
+const CommandPalette = dynamic(() =>
+  import("@/components/portal/command-palette").then((m) => m.CommandPalette)
+)
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) redirect("/portal/login")
+  if (user.role !== "client") redirect("/dashboard")
+
   const client = await getActiveClient(supabase)
 
   const pendingRequestCount = client

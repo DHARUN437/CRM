@@ -15,10 +15,11 @@ export function PendingRequestsBadge({
   className,
 }: PendingRequestsBadgeProps) {
   const [count, setCount] = useState(initialCount)
-
-  useEffect(() => {
+  const [prevInitialCount, setPrevInitialCount] = useState(initialCount)
+  if (prevInitialCount !== initialCount) {
+    setPrevInitialCount(initialCount)
     setCount(initialCount)
-  }, [initialCount])
+  }
 
   useEffect(() => {
     if (!clientId) return

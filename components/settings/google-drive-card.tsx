@@ -47,8 +47,8 @@ export function GoogleDriveCard({
       setStatus({ isConnected: false, folderIdConfigured: status.folderIdConfigured })
       setUploadMessage({ type: "success", text: "Google Drive has been disconnected." })
       router.refresh()
-    } catch (err: any) {
-      setUploadMessage({ type: "error", text: err.message || "Failed to disconnect." })
+    } catch (err) {
+      setUploadMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to disconnect." })
     } finally {
       setDisconnecting(false)
     }
@@ -69,8 +69,8 @@ export function GoogleDriveCard({
         text: `Success! Test file "${data.fileName}" uploaded to Google Drive.`,
         fileUrl: data.webViewLink,
       })
-    } catch (err: any) {
-      setUploadMessage({ type: "error", text: err.message || "Google Drive test upload failed." })
+    } catch (err) {
+      setUploadMessage({ type: "error", text: err instanceof Error ? err.message : "Google Drive test upload failed." })
     } finally {
       setTestingUpload(false)
     }

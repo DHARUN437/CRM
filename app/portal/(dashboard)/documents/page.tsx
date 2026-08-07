@@ -56,7 +56,7 @@ export default async function PortalDocumentsPage() {
         />
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {documents.map((doc, index) => (
+          {documents.map((doc) => (
             <Card key={doc.id} className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-border/50 bg-card p-5 shadow-sm backdrop-blur-xl transition-all hover:-translate-y-1 hover:shadow-layered glass-card-hover min-h-[160px]">
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-3">

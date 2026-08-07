@@ -13,7 +13,6 @@ export default async function AdminEODReportsPage() {
   }
 
   const supabase = await createClient()
-  const isAdmin = user.role === "team"
   const isTL = user.role === "tl"
 
   let allowedUserIds: string[] | null = null

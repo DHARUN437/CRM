@@ -1,13 +1,18 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+import dynamic from "next/dynamic"
 import { useCallback, useEffect, useState } from "react"
-import { CommandPalette } from "@/components/app/command-palette"
 import { SidebarContent } from "@/components/app/sidebar"
 import { Topbar } from "@/components/app/topbar"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { motion } from "framer-motion"
 import { AppBackground } from "@/components/ui/app-background"
+
+const CommandPalette = dynamic(
+  () => import("@/components/app/command-palette").then((m) => m.CommandPalette),
+  { ssr: false }
+)
 
 const titles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -31,13 +36,15 @@ export function AppShell({
   const pathname = usePathname()
   const [searchOpen, setSearchOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [isBooting, setIsBooting] = useState(false)
+  const [isBooting] = useState(() => {
+    if (typeof sessionStorage === "undefined") return false
+    return !!sessionStorage.getItem("auth-booted")
+  })
 
   const title = titles[pathname] ?? "JoyCRM"
 
   useEffect(() => {
-    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("auth-booted")) {
-      setIsBooting(true)
+    if (typeof sessionStorage !== "undefined") {
       sessionStorage.removeItem("auth-booted")
     }
 

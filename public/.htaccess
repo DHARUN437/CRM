@@ -10,7 +10,7 @@ DirectoryIndex index.html
   RewriteRule ^login/?$ index.html [QSA,L]
   RewriteRule ^portal/login/?$ index.html [QSA,L]
 
-  # 2. Do not rewrite static files or directories that exist (images, js, css, download/JoyCRM.apk)
+  # 2. Do not rewrite static files or directories that exist (images, js, css)
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
@@ -19,9 +19,6 @@ DirectoryIndex index.html
   RewriteRule ^ index.html [QSA,L]
 </IfModule>
 
-# Serve Android APK files with proper MIME type
-AddType application/vnd.android.package-archive .apk
-
 # Disable caching for HTML files during testing phase
 <IfModule mod_headers.c>
   <FilesMatch "\.(html|htm)$">
@@ -29,6 +26,14 @@ AddType application/vnd.android.package-archive .apk
     Header set Pragma "no-cache"
     Header set Expires 0
   </FilesMatch>
+</IfModule>
+
+# Security headers (match next.config.mjs for the static-host path)
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
 </IfModule>
 
 # Enable Gzip Compression for Fast Mobile Loading

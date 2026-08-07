@@ -2,7 +2,6 @@ import Link from "next/link"
 import { StatCard } from "@/components/common/stat-card"
 import { StatusBadge } from "@/components/common/status-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { EditClientDialog } from "@/components/clients/edit-client-dialog"
 import { DeleteClientDialog } from "@/components/clients/delete-client-dialog"
 import { Progress } from "@/components/ui/progress"
@@ -13,7 +12,6 @@ import {
   FileText,
   FolderKanban,
   Mail,
-  Pencil,
   Phone,
   StickyNote,
   UserRound,

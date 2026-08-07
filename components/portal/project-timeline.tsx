@@ -24,7 +24,9 @@ export function ProjectTimeline({ status = "kickoff", progress }: ProjectTimelin
   const progressPercent =
     status === "completed"
       ? 100
-      : Math.round((currentStatusIndex / (totalSteps - 1)) * 100)
+      : progress !== undefined
+        ? Math.min(100, Math.max(0, progress))
+        : Math.round((currentStatusIndex / (totalSteps - 1)) * 100)
 
   return (
     <div className="py-6 px-4">

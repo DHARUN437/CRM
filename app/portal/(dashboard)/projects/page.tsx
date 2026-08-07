@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getActiveClient } from "@/lib/supabase/portal"
-import { NoClientNotice } from "@/components/portal/no-client-notice"
 import { ProjectCard } from "@/components/portal/project-card"
 import { ProjectStatusLegend } from "@/components/portal/project-status-legend"
 import {

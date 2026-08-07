@@ -38,8 +38,16 @@ export function CreateInvoiceDialog({
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [clientList, setClientList] = useState<ClientItem[]>(clients)
-
   const [clientId, setClientId] = useState(presetClientId || (clients[0]?.id ?? ""))
+  const [prevClients, setPrevClients] = useState(clients)
+  if (prevClients !== clients) {
+    setPrevClients(clients)
+    setClientList(clients)
+    if (!clientId && !presetClientId && clients.length > 0) {
+      setClientId(clients[0].id)
+    }
+  }
+
   const [projectId, setProjectId] = useState(presetProjectId || "")
   const [amount, setAmount] = useState("")
   const [tax, setTax] = useState("0")
@@ -50,24 +58,19 @@ export function CreateInvoiceDialog({
 
   // Fetch clients if list is empty or modal opens
   useEffect(() => {
-    if (clients.length > 0) {
-      setClientList(clients)
-      if (!clientId && !presetClientId) {
-        setClientId(clients[0].id)
-      }
-    } else {
-      fetch("/api/clients")
-        .then((res) => res.json())
-        .then((data) => {
-          if (Array.isArray(data) && data.length > 0) {
-            setClientList(data)
-            if (!clientId && !presetClientId) {
-              setClientId(data[0].id)
-            }
+    if (clients.length > 0) return
+
+    fetch("/api/clients")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setClientList(data)
+          if (!clientId && !presetClientId) {
+            setClientId(data[0].id)
           }
-        })
-        .catch((err) => console.error("Error fetching clients for select:", err))
-    }
+        }
+      })
+      .catch((err) => console.error("Error fetching clients for select:", err))
   }, [clients, open, clientId, presetClientId])
 
   const filteredProjects = projects.filter((p) => p.client_id === clientId)

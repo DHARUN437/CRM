@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, CheckCircle2, XCircle, RefreshCw, MessageSquare, Loader2 } from "lucide-react"
+import { Calendar, Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react"
 
 export interface MeetingItem {
   id: string
@@ -59,8 +59,8 @@ export function AdminMeetingsClient({ initialMeetings }: AdminMeetingsClientProp
 
       if (!res.ok) throw new Error("Failed to update meeting status")
       router.refresh()
-    } catch (err: any) {
-      alert(err.message || "Failed to update meeting")
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update meeting")
     } finally {
       setUpdatingId(null)
     }

@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/supabase/session"
 import { getOrCreateFolder, uploadFileToDrive } from "@/lib/google-drive"
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient()
     const user = await getCurrentUser()
 
     if (!user) {
@@ -72,10 +70,10 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ files: uploadedFiles })
-  } catch (err: any) {
+  } catch (err) {
     console.error("EOD Google Drive upload error:", err)
     return NextResponse.json(
-      { error: err.message || "Failed to upload attachments to Google Drive." },
+      { error: err instanceof Error ? err.message : "Failed to upload attachments to Google Drive." },
       { status: 500 }
     )
   }

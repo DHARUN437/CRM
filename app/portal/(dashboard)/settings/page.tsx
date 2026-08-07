@@ -1,26 +1,20 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/supabase/session"
+import { getActiveClient } from "@/lib/supabase/portal"
 import { ChangePasswordCard } from "@/components/settings/change-password-card"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { User, ShieldCheck } from "lucide-react"
+import { User } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
 export default async function ClientPortalSettingsPage() {
   const supabase = await createClient()
+  const client = await getActiveClient(supabase)
+  if (!client) redirect("/portal/login")
   const user = await getCurrentUser()
-  if (!user) redirect("/portal/login")
 
-  // Fetch client details if client user
-  const { data: client } = await supabase
-    .from("clients")
-    .select("name, company, email")
-    .eq("user_id", user.id)
-    .maybeSingle()
-
-  const displayName = client?.name || user.name || "Client"
+  const displayName = client?.name || user?.name || "Client"
   const companyName = client?.company || "Client Portal"
 
   return (
@@ -56,7 +50,7 @@ export default async function ClientPortalSettingsPage() {
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-xs font-semibold text-[var(--text-secondary)]">Account Email</span>
-            <span className="text-sm font-bold text-[var(--text-primary)] truncate">{user.email}</span>
+            <span className="text-sm font-bold text-[var(--text-primary)] truncate">{client?.email || user?.email || "—"}</span>
           </div>
         </CardContent>
       </Card>

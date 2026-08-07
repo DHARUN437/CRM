@@ -34,8 +34,8 @@ export async function getPendingRequestCount(
     }
 
     return count ?? 0
-  } catch (err: any) {
-    console.error("Exception in getPendingRequestCount:", err?.message || err)
+  } catch (err) {
+    console.error("Exception in getPendingRequestCount:", err instanceof Error ? err.message : err)
     return 0
   }
 }
@@ -55,11 +55,12 @@ export async function getActiveClient(
     if (authError || !user) return null
 
     // 1. Try to find client by user_id
-    let { data, error } = await supabase
+    const { data: initialData, error } = await supabase
       .from("clients")
       .select("*")
       .eq("user_id", user.id)
       .maybeSingle()
+    let data = initialData
 
     if (error && error.code !== "PGRST116") {
       console.error("Error fetching client by user_id:", error.message || error)

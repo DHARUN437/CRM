@@ -1,7 +1,7 @@
 "use client"
 
 import { createClient } from "@/lib/supabase/client"
-import { optimizeFileForUpload, CDN_UPLOAD_OPTIONS } from "@/lib/media-optimization"
+import { optimizeFileForUpload } from "@/lib/media-optimization"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
-import { useRef, useState } from "react"
+import { useRef, useState, type RefObject } from "react"
 import { CloudUpload, FileUp, Loader2, X } from "lucide-react"
 import type { Project } from "@/lib/portal-types"
 import { cn } from "@/lib/utils"
@@ -51,103 +51,38 @@ interface PendingFile {
   error?: string
 }
 
-export function UploadDocuments({
-  clientId,
+interface UploadFormFieldsProps {
+  projects: Pick<Project, "id" | "name">[]
+  projectId: string
+  presetProjectId?: string
+  onProjectChange: (value: string) => void
+  inputRef: RefObject<HTMLInputElement | null>
+  onPickFiles: (list: FileList | null) => void
+  files: PendingFile[]
+  onRemoveFile: (index: number) => void
+  error: string | null
+}
+
+function UploadFormFields({
   projects,
+  projectId,
   presetProjectId,
-  label = "Upload documents",
-  variant = "default",
-}: UploadDocumentsProps) {
-  const router = useRouter()
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [open, setOpen] = useState(false)
-  const [projectId, setProjectId] = useState(presetProjectId ?? "")
-  const [files, setFiles] = useState<PendingFile[]>([])
-  const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const isMobile = useIsMobile()
-
-  function onPickFiles(list: FileList | null) {
-    if (!list) return
-    const next = Array.from(list).map((file) => ({ file, status: "pending" as const }))
-    setFiles((prev) => [...prev, ...next])
-  }
-
-  function removeFile(index: number) {
-    setFiles((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  async function handleUpload() {
-    if (!projectId || files.length === 0) return
-    setUploading(true)
-    setError(null)
-
-    const supabase = createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    const updated = [...files]
-    for (let i = 0; i < updated.length; i++) {
-      const item = updated[i]
-      if (item.status === "done") continue
-
-      updated[i] = { ...item, status: "uploading" }
-      setFiles([...updated])
-
-      const { file: optimizedFile } = await optimizeFileForUpload(item.file)
-      const formData = new FormData()
-      formData.append("file", optimizedFile)
-      formData.append("projectId", projectId)
-      if (clientId) formData.append("clientId", clientId)
-
-      try {
-        const res = await fetch("/api/documents/upload", {
-          method: "POST",
-          body: formData,
-        })
-
-        if (!res.ok) {
-          const resData = await res.json()
-          throw new Error(resData.error || "Upload failed")
-        }
-
-        updated[i] = { ...item, status: "done" }
-      } catch (err: unknown) {
-        updated[i] = {
-          ...item,
-          status: "error",
-          error: err instanceof Error ? err.message : "Upload failed",
-        }
-      }
-      setFiles([...updated])
-    }
-
-    setUploading(false)
-
-    const failed = updated.some((f) => f.status === "error")
-    const succeeded = updated.some((f) => f.status === "done")
-
-    if (succeeded && !failed) {
-      setOpen(false)
-      setFiles([])
-      setProjectId(presetProjectId ?? "")
-      router.refresh()
-    } else if (failed) {
-      setError("Some files failed to upload. See the list below.")
-    }
-  }
-
+  onProjectChange,
+  inputRef,
+  onPickFiles,
+  files,
+  onRemoveFile,
+  error,
+}: UploadFormFieldsProps) {
   const selectedProject = projects.find((p) => p.id === projectId)
-  const canUpload = projectId && files.length > 0 && !uploading
 
-  const UploadForm = () => (
+  return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <Label htmlFor="upload-project">Project</Label>
         <Select
           value={projectId}
-          onValueChange={(v) => setProjectId(v ?? "")}
+          onValueChange={(v) => onProjectChange(v ?? "")}
           disabled={Boolean(presetProjectId)}
         >
           <SelectTrigger id="upload-project">
@@ -212,7 +147,7 @@ export function UploadDocuments({
                   {item.status !== "uploading" && (
                     <button
                       type="button"
-                      onClick={() => removeFile(index)}
+                      onClick={() => onRemoveFile(index)}
                       className="text-muted-foreground hover:text-foreground"
                     >
                       <X className="size-4" />
@@ -232,6 +167,106 @@ export function UploadDocuments({
       )}
     </div>
   )
+}
+
+export function UploadDocuments({
+  clientId,
+  projects,
+  presetProjectId,
+  label = "Upload documents",
+  variant = "default",
+}: UploadDocumentsProps) {
+  const router = useRouter()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [open, setOpen] = useState(false)
+  const [projectId, setProjectId] = useState(presetProjectId ?? "")
+  const [files, setFiles] = useState<PendingFile[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const isMobile = useIsMobile()
+
+  function onPickFiles(list: FileList | null) {
+    if (!list) return
+    const next = Array.from(list).map((file) => ({ file, status: "pending" as const }))
+    setFiles((prev) => [...prev, ...next])
+  }
+
+  function removeFile(index: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  async function handleUpload() {
+    if (!projectId || files.length === 0) return
+    setUploading(true)
+    setError(null)
+
+    const supabase = createClient()
+    await supabase.auth.getUser()
+
+    const updated = [...files]
+    for (let i = 0; i < updated.length; i++) {
+      const item = updated[i]
+      if (item.status === "done") continue
+
+      updated[i] = { ...item, status: "uploading" }
+      setFiles([...updated])
+
+      const { file: optimizedFile } = await optimizeFileForUpload(item.file)
+      const formData = new FormData()
+      formData.append("file", optimizedFile)
+      formData.append("projectId", projectId)
+      if (clientId) formData.append("clientId", clientId)
+
+      try {
+        const res = await fetch("/api/documents/upload", {
+          method: "POST",
+          body: formData,
+        })
+
+        if (!res.ok) {
+          const resData = await res.json()
+          throw new Error(resData.error || "Upload failed")
+        }
+
+        updated[i] = { ...item, status: "done" }
+      } catch (err: unknown) {
+        updated[i] = {
+          ...item,
+          status: "error",
+          error: err instanceof Error ? err.message : "Upload failed",
+        }
+      }
+      setFiles([...updated])
+    }
+
+    setUploading(false)
+
+    const failed = updated.some((f) => f.status === "error")
+    const succeeded = updated.some((f) => f.status === "done")
+
+    if (succeeded && !failed) {
+      setOpen(false)
+      setFiles([])
+      setProjectId(presetProjectId ?? "")
+      router.refresh()
+    } else if (failed) {
+      setError("Some files failed to upload. See the list below.")
+    }
+  }
+
+  const canUpload = projectId && files.length > 0 && !uploading
+
+  const uploadFormProps = {
+    projects,
+    projectId,
+    presetProjectId,
+    onProjectChange: (v: string) => setProjectId(v ?? ""),
+    inputRef,
+    onPickFiles,
+    files,
+    onRemoveFile: removeFile,
+    error,
+  }
 
   if (isMobile) {
     return (
@@ -251,7 +286,7 @@ export function UploadDocuments({
               Files are shared securely with your development team.
             </DrawerDescription>
           </DrawerHeader>
-          <UploadForm />
+          <UploadFormFields {...uploadFormProps} />
           <DrawerFooter className="px-0 pt-4 pb-8">
             <Button onClick={handleUpload} disabled={!canUpload} className="w-full">
               {uploading && <Loader2 className="size-4 animate-spin mr-2" />}
@@ -281,7 +316,7 @@ export function UploadDocuments({
             Files are shared securely with your development team.
           </DialogDescription>
         </DialogHeader>
-        <UploadForm />
+        <UploadFormFields {...uploadFormProps} />
         <DialogFooter className="mt-4">
           <Button
             onClick={handleUpload}

@@ -26,12 +26,13 @@ const TASK_COLUMNS: { id: TaskStatus; label: string }[] = [
 export function TaskBoard({ tasks: initialTasks }: TaskBoardProps) {
   const router = useRouter()
   const [tasks, setTasks] = useState<ProjectTask[]>(initialTasks)
+  const [prevInitialTasks, setPrevInitialTasks] = useState(initialTasks)
+  if (prevInitialTasks !== initialTasks) {
+    setPrevInitialTasks(initialTasks)
+    setTasks(initialTasks)
+  }
   const [dragId, setDragId] = useState<string | null>(null)
   const [overColumn, setOverColumn] = useState<TaskStatus | null>(null)
-
-  useEffect(() => {
-    setTasks(initialTasks)
-  }, [initialTasks])
 
   // Real-time WebSocket subscription for instant task updates across clients and workers
   useEffect(() => {

@@ -14,6 +14,32 @@ import {
 
 export const dynamic = "force-dynamic"
 
+interface OverdueInvoiceRow {
+  id: string
+  invoice_number: string | null
+  amount: number
+  due_date: string
+  clients?:
+    | { name: string | null; company: string | null }[]
+    | { name: string | null; company: string | null }
+    | null
+  projects?: { name: string | null }[] | { name: string | null } | null
+}
+
+interface ClientRiskRow {
+  id: string
+  name: string | null
+  company: string | null
+  created_at: string
+  projects: { id: string; name: string | null; status: string; updated_at: string }[]
+}
+
+interface TeamWorkloadRow {
+  id: string
+  name: string | null
+  role: string
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient()
   const user = await getCurrentUser()
@@ -64,16 +90,18 @@ export default async function DashboardPage() {
 
     if (rawInvoices) {
       const todayMs = new Date().getTime()
-      overdueInvoiceList = rawInvoices.map((inv: any) => {
+      overdueInvoiceList = rawInvoices.map((inv: OverdueInvoiceRow) => {
         const amt = Number(inv.amount ?? 0)
         totalOverdueAmount += amt
         const dueMs = new Date(inv.due_date).getTime()
         const daysOverdue = Math.max(1, Math.floor((todayMs - dueMs) / (1000 * 60 * 60 * 24)))
+        const invoiceClient = Array.isArray(inv.clients) ? inv.clients[0] : inv.clients
+        const invoiceProject = Array.isArray(inv.projects) ? inv.projects[0] : inv.projects
         return {
           id: inv.id,
           invoice_number: inv.invoice_number,
-          client_name: inv.clients?.company || inv.clients?.name || "Client",
-          project_name: inv.projects?.name || "Project",
+          client_name: invoiceClient?.company || invoiceClient?.name || "Client",
+          project_name: invoiceProject?.name || "Project",
           amount: amt,
           due_date: inv.due_date,
           days_overdue: daysOverdue,
@@ -84,9 +112,9 @@ export default async function DashboardPage() {
     if (rawClients) {
       const twentyOneDaysAgoIso = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString()
       atRiskClientList = rawClients
-        .map((client: any) => {
+        .map((client: ClientRiskRow) => {
           const clientProjects = client.projects ?? []
-          const activeProjects = clientProjects.filter((p: any) => p.status !== "completed")
+          const activeProjects = clientProjects.filter((p: { status: string }) => p.status !== "completed")
           if (activeProjects.length === 0) return null
 
           let latestUpdate = client.created_at
@@ -120,7 +148,7 @@ export default async function DashboardPage() {
       }
 
       let totalTasks = 0
-      teamWorkloadList = teamMembersList.map((m: any) => {
+      teamWorkloadList = teamMembersList.map((m: TeamWorkloadRow) => {
         const count = taskCountMap.get(m.id) ?? 0
         totalTasks += count
         return {

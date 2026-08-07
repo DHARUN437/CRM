@@ -76,10 +76,10 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.redirect(new URL("/settings?success=google_drive_connected", request.url))
-  } catch (err: any) {
+  } catch (err) {
     console.error("Google Drive OAuth callback handler error:", err)
     return NextResponse.redirect(
-      new URL("/settings?error=" + encodeURIComponent(err.message || "oauth_failed"), request.url)
+      new URL("/settings?error=" + encodeURIComponent(err instanceof Error ? err.message : "oauth_failed"), request.url)
     )
   }
 }

@@ -27,6 +27,7 @@ export function FeatureRequestsLive({
         .select("*")
         .eq("project_id", projectId)
         .order("created_at", { ascending: false })
+        .limit(200)
         .then(({ data }) => {
           if (data) setRequests(data as unknown as FeatureRequest[])
         })

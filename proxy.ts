@@ -11,6 +11,12 @@ const APP_PREFIXES = [
   "/clients",
   "/invoices",
   "/chat",
+  "/eod",
+  "/eod-reports",
+  "/meetings",
+  "/monthly-tasks",
+  "/audit",
+  "/settings",
 ]
 
 const PORTAL_PREFIXES = ["/portal"]

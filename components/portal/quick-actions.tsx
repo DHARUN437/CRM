@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Plus, HelpCircle, Upload, Calendar, Receipt } from "lucide-react"
+import { Plus, Upload, Calendar, Receipt } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { ScheduleMeetingDialog } from "./schedule-meeting-dialog"

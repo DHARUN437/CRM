@@ -17,7 +17,7 @@ export async function PATCH(
   const body = await request.json()
   const { status, progress } = body
 
-  const updateData: any = { updated_at: new Date().toISOString() }
+  const updateData: Record<string, string | number> = { updated_at: new Date().toISOString() }
 
   if (status) {
     updateData.status = status

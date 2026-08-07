@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Search, FolderKanban, Files, Receipt, FileQuestion, Users } from "lucide-react"
+import { FolderKanban, Files, Receipt, FileQuestion } from "lucide-react"
 import {
   CommandDialog,
   CommandEmpty,

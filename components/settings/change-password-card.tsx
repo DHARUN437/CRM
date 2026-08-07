@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Loader2, KeyRound, Eye, EyeOff, AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react"
+import { Loader2, KeyRound, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 export function ChangePasswordCard() {
@@ -82,8 +82,8 @@ export function ChangePasswordCard() {
       setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred. Please try again.")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred. Please try again.")
     } finally {
       setLoading(false)
     }

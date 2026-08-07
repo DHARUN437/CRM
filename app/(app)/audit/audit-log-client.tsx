@@ -56,11 +56,16 @@ function formatDate(iso: string) {
 
 export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
   const [range, setRange] = useState<"30d" | "90d" | "all">("all")
+  const [now, setNow] = useState(() => Date.now())
+
+  const handleRangeChange = (nextRange: "30d" | "90d" | "all") => {
+    setRange(nextRange)
+    setNow(Date.now())
+  }
 
   const filteredLogs = initialLogs.filter((log) => {
     if (range === "all") return true
     const logTime = new Date(log.createdAt).getTime()
-    const now = Date.now()
     const days = range === "30d" ? 30 : 90
     return now - logTime <= days * 24 * 60 * 60 * 1000
   })
@@ -78,7 +83,7 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
           <Button
             size="sm"
             variant={range === "30d" ? "default" : "outline"}
-            onClick={() => setRange("30d")}
+            onClick={() => handleRangeChange("30d")}
             className={`text-xs h-8 rounded-lg font-semibold ${
               range === "30d" ? "bg-[var(--accent)] text-white" : "text-[var(--text-secondary)]"
             }`}
@@ -89,7 +94,7 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
           <Button
             size="sm"
             variant={range === "90d" ? "default" : "outline"}
-            onClick={() => setRange("90d")}
+            onClick={() => handleRangeChange("90d")}
             className={`text-xs h-8 rounded-lg font-semibold ${
               range === "90d" ? "bg-[var(--accent)] text-white" : "text-[var(--text-secondary)]"
             }`}
@@ -100,7 +105,7 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
           <Button
             size="sm"
             variant={range === "all" ? "default" : "outline"}
-            onClick={() => setRange("all")}
+            onClick={() => handleRangeChange("all")}
             className={`text-xs h-8 rounded-lg font-semibold ${
               range === "all" ? "bg-[var(--accent)] text-white" : "text-[var(--text-secondary)]"
             }`}

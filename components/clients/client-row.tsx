@@ -1,20 +1,8 @@
 "use client"
 
-import { Building2, FolderKanban, Mail, MoreHorizontal, Pencil, Phone, Trash2, UserRound } from "lucide-react"
+import { Building2, FolderKanban, Mail, Phone, UserRound } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { EditClientDialog } from "@/components/clients/edit-client-dialog"
 import { DeleteClientDialog } from "@/components/clients/delete-client-dialog"
 import type { ClientWithStats } from "@/lib/clients"
@@ -25,14 +13,7 @@ import {
 
 const MAX_STATUS_BADGES = 3
 
-export function ClientRow({
-  client,
-  onDeleted,
-}: {
-  client: ClientWithStats
-  onDeleted?: () => void
-}) {
-  const router = useRouter()
+export function ClientRow({ client }: { client: ClientWithStats }) {
   const displayName = client.company ? `${client.company} (${client.name})` : client.name
 
   const statuses = client.projects.map((p) => ({

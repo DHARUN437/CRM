@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server"
 import { uploadFileToDrive } from "@/lib/google-drive"
+import { getCurrentUser } from "@/lib/supabase/session"
 
 export async function POST() {
+  const user = await getCurrentUser()
+  if (!user || user.role !== "team") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   try {
     const timestamp = new Date().toISOString()
     const fileName = `test-drive-connection-${Date.now()}.txt`
@@ -20,10 +26,10 @@ export async function POST() {
       webViewLink: result.webViewLink,
       message: `Test file successfully uploaded to Google Drive folder! (ID: ${result.id})`,
     })
-  } catch (err: any) {
+  } catch (err) {
     console.error("Test upload error:", err)
     return NextResponse.json(
-      { error: err.message || "Google Drive test upload failed." },
+      { error: err instanceof Error ? err.message : "Google Drive test upload failed." },
       { status: 500 }
     )
   }

@@ -1,5 +1,3 @@
-import { readFileSync } from "fs"
-
 const token = process.env.SUPABASE_ACCESS_TOKEN || ""
 const projectRef = "xgeskisiwrgizhmabsci"
 const url = `https://api.supabase.com/v1/projects/${projectRef}/config/auth`

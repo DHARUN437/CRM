@@ -12,8 +12,8 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { FileQuestion, Inbox, CheckCircle2, Lightbulb, Calendar, Clock, MapPin } from "lucide-react"
-import { formatDate } from "@/lib/portal-types"
+import { FileQuestion, Inbox, CheckCircle2, Lightbulb, Calendar, Clock } from "lucide-react"
+import { formatDate, type FeatureRequest } from "@/lib/portal-types"
 
 export const dynamic = "force-dynamic"
 
@@ -23,6 +23,24 @@ const MEETING_STATUS_META: Record<string, { label: string; badge: string }> = {
   rescheduled: { label: "Rescheduled", badge: "bg-warning/15 text-warning font-semibold" },
   declined: { label: "Declined", badge: "bg-destructive/15 text-destructive font-semibold" },
   completed: { label: "Completed", badge: "bg-primary/15 text-primary font-semibold" },
+}
+
+interface FeatureRequestRow extends FeatureRequest {
+  projects?: { name: string | null } | null
+}
+
+interface MeetingRow {
+  id: string
+  status: string
+  title: string
+  description: string | null
+  requested_date: string
+  confirmed_date: string | null
+  requested_time: string
+  confirmed_time: string | null
+  duration_minutes: number
+  admin_notes: string | null
+  projects?: { name: string | null } | null
 }
 
 export default async function PortalRequestsPage() {
@@ -77,12 +95,12 @@ export default async function PortalRequestsPage() {
     }
   })
 
-  const featureRequests = (rawFeatureRequests ?? []).map((fr: any) => ({
+  const featureRequests = (rawFeatureRequests ?? []).map((fr: FeatureRequestRow) => ({
     ...fr,
     project_name: fr.projects?.name ?? "Project",
   }))
 
-  const meetings = (rawMeetings ?? []).map((m: any) => ({
+  const meetings = (rawMeetings ?? []).map((m: MeetingRow) => ({
     ...m,
     project_name: m.projects?.name ?? "General",
   }))

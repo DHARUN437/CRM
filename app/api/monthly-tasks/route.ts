@@ -2,6 +2,13 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/supabase/session"
 
+type EodTaskUpdateRow = {
+  id: string
+  work_date: string
+  note: string | null
+  employee_id: string
+}
+
 export async function GET(request: Request) {
   const supabase = await createClient()
   const user = await getCurrentUser()
@@ -34,7 +41,7 @@ export async function GET(request: Request) {
   const userIds = [...new Set((rawTasks || []).flatMap((t) => [
     t.assigned_to,
     t.assigned_by,
-    ...(t.eod_task_updates || []).map((u: any) => u.employee_id)
+    ...(t.eod_task_updates || []).map((u: EodTaskUpdateRow) => u.employee_id)
   ]))]
   const names = new Map<string, string>()
 
@@ -48,12 +55,12 @@ export async function GET(request: Request) {
     }
   }
 
-  const tasks = (rawTasks || []).map((t: any) => {
-    const updates = (t.eod_task_updates || []).sort(
-      (a: any, b: any) => new Date(b.work_date).getTime() - new Date(a.work_date).getTime()
+  const tasks = (rawTasks || []).map((t) => {
+    const updates = ((t.eod_task_updates || []) as EodTaskUpdateRow[]).sort(
+      (a, b) => new Date(b.work_date).getTime() - new Date(a.work_date).getTime()
     )
 
-    const workHistory = updates.map((u: any) => ({
+    const workHistory = updates.map((u) => ({
       id: u.id,
       workDate: u.work_date,
       employeeName: names.get(u.employee_id) || "Employee",

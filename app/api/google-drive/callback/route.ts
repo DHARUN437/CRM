@@ -1,18 +1,35 @@
 import { NextRequest, NextResponse } from "next/server"
 import { saveGoogleDriveConnection } from "@/lib/google-drive"
 
+const STATE_COOKIE = "google_oauth_state"
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get("code")
   const error = searchParams.get("error")
+  const state = searchParams.get("state")
+  const savedState = request.cookies.get(STATE_COOKIE)?.value
+
+  const redirectWithError = (message: string) => {
+    const res = NextResponse.redirect(
+      new URL("/settings?error=" + encodeURIComponent(message), request.url)
+    )
+    res.cookies.delete(STATE_COOKIE)
+    return res
+  }
 
   if (error) {
     console.error("Google OAuth error:", error)
-    return NextResponse.redirect(new URL("/settings?error=" + encodeURIComponent(error), request.url))
+    return redirectWithError(error)
   }
 
   if (!code) {
-    return NextResponse.redirect(new URL("/settings?error=no_code_provided", request.url))
+    return redirectWithError("no_code_provided")
+  }
+
+  if (!state || !savedState || state.length !== savedState.length || !timingSafeEqual(state, savedState)) {
+    console.error("OAuth state mismatch: CSRF protection triggered.")
+    return redirectWithError("oauth_state_mismatch")
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID
@@ -20,9 +37,7 @@ export async function GET(request: NextRequest) {
   const redirectUri = process.env.GOOGLE_REDIRECT_URI
 
   if (!clientId || !clientSecret || !redirectUri) {
-    return NextResponse.redirect(
-      new URL("/settings?error=missing_env_vars", request.url)
-    )
+    return redirectWithError("missing_env_vars")
   }
 
   try {
@@ -43,9 +58,7 @@ export async function GET(request: NextRequest) {
 
     if (!tokenRes.ok || !tokenData.access_token) {
       console.error("Token exchange failed:", tokenData)
-      return NextResponse.redirect(
-        new URL("/settings?error=" + encodeURIComponent(tokenData.error_description || "token_exchange_failed"), request.url)
-      )
+      return redirectWithError(tokenData.error_description || "token_exchange_failed")
     }
 
     const refreshToken = tokenData.refresh_token
@@ -74,11 +87,24 @@ export async function GET(request: NextRequest) {
       connectedAt: new Date().toISOString(),
     })
 
-    return NextResponse.redirect(new URL("/settings?success=google_drive_connected", request.url))
-  } catch (err: any) {
-    console.error("Google Drive OAuth callback handler error:", err)
-    return NextResponse.redirect(
-      new URL("/settings?error=" + encodeURIComponent(err.message || "oauth_failed"), request.url)
+    const successRes = NextResponse.redirect(
+      new URL("/settings?success=google_drive_connected", request.url)
     )
+    successRes.cookies.delete(STATE_COOKIE)
+    return successRes
+  } catch (err) {
+    console.error("Google Drive OAuth callback handler error:", err)
+    return redirectWithError(err instanceof Error ? err.message : "oauth_failed")
   }
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let result = 0
+  const aBytes = Buffer.from(a, "utf8")
+  const bBytes = Buffer.from(b, "utf8")
+  for (let i = 0; i < aBytes.length; i++) {
+    result |= aBytes[i] ^ bBytes[i]
+  }
+  return result === 0
 }

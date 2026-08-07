@@ -9,6 +9,7 @@ export default async function AppLayout({
 }) {
   const user = await getCurrentUser()
   if (!user) redirect("/login")
+  if (user.role === "client") redirect("/portal")
 
   return (
     <AppShell

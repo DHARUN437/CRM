@@ -16,10 +16,11 @@ interface CrmDashboardProps {
 
 export function CrmDashboard({ initialLeads, currentUser }: CrmDashboardProps) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads)
-
-  useEffect(() => {
+  const [prevInitialLeads, setPrevInitialLeads] = useState(initialLeads)
+  if (prevInitialLeads !== initialLeads) {
+    setPrevInitialLeads(initialLeads)
     setLeads(initialLeads)
-  }, [initialLeads])
+  }
 
   // Instant WebSocket real-time subscription for leads table updates
   useEffect(() => {

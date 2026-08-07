@@ -39,13 +39,13 @@ export default function ForgotPasswordPage() {
 
       if (resetError) {
         console.error("Password reset request error:", resetError)
-        setError(resetError.message || "Failed to send reset link. Please try again.")
+        setError("Unable to send reset link. Please try again.")
       } else {
         setSubmitted(true)
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Password reset exception:", err)
-      setError(err.message || "An unexpected error occurred. Please try again.")
+      setError(err instanceof Error ? err.message : "An unexpected error occurred. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -60,29 +60,29 @@ export default function ForgotPasswordPage() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col gap-5 w-full mt-4 p-6 rounded-2xl bg-black/30 border border-white/10 backdrop-blur-md text-center"
+          className="flex flex-col gap-5 w-full mt-4 p-6 rounded-2xl bg-white border border-[var(--border)] shadow-sm text-center"
         >
-          <div className="flex size-12 mx-auto items-center justify-center rounded-full bg-success/15 text-success">
+          <div className="flex size-12 mx-auto items-center justify-center rounded-full bg-[var(--success)]/15 text-[var(--success)]">
             <CheckCircle2 className="size-6" />
           </div>
           <div className="flex flex-col gap-1.5">
-            <h3 className="text-lg font-bold text-white">Reset Link Sent</h3>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              If an account exists for <span className="font-semibold text-white">{email}</span>, a password reset link has been sent. Please check your inbox and spam folder.
+            <h3 className="text-lg font-bold text-[var(--text-primary)]">Reset Link Sent</h3>
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+              If an account exists for <span className="font-semibold text-[var(--text-primary)]">{email}</span>, a password reset link has been sent. Please check your inbox and spam folder.
             </p>
           </div>
 
-          <div className="pt-3 border-t border-white/10 flex flex-col gap-3">
+          <div className="pt-3 border-t border-[var(--border)] flex flex-col gap-3">
             <Link
               href="/login"
-              className="inline-flex items-center justify-center gap-2 text-xs font-semibold text-[#7C6DFF] hover:text-[#9B8CFF] transition-colors"
+              className="inline-flex items-center justify-center gap-2 text-xs font-semibold text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors"
             >
               <ArrowLeft className="size-3.5" />
               Return to Staff Sign In
             </Link>
             <Link
               href="/portal/login"
-              className="inline-flex items-center justify-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+              className="inline-flex items-center justify-center gap-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
               Return to Client Portal Sign In
             </Link>
@@ -91,7 +91,7 @@ export default function ForgotPasswordPage() {
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full mt-4">
           <div className="relative group">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-4.5 text-slate-500 transition-colors group-focus-within:text-[#7C6DFF] z-10" />
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-4.5 text-[var(--text-muted)] transition-colors group-focus-within:text-[var(--accent)] z-10" />
             <input
               id="email"
               type="email"
@@ -100,11 +100,11 @@ export default function ForgotPasswordPage() {
               required
               autoComplete="email"
               placeholder=" "
-              className="peer h-14 w-full rounded-xl border border-white/10 bg-black/20 pl-11 pr-4 text-sm text-white transition-all duration-300 hover:border-white/20 focus:border-[#7C6DFF]/50 focus:bg-black/40 focus:outline-none focus:ring-4 focus:ring-[#7C6DFF]/10 backdrop-blur-sm"
+              className="peer h-14 w-full rounded-xl border border-[var(--border)] bg-white pl-11 pr-4 text-sm text-[var(--text-primary)] shadow-sm transition-all duration-300 hover:border-[var(--text-muted)]/50 focus:border-[var(--accent)]/60 focus:bg-white focus:outline-none focus:ring-4 focus:ring-[var(--accent)]/10"
             />
             <label
               htmlFor="email"
-              className="absolute left-11 top-1/2 -translate-y-1/2 text-sm text-slate-500 transition-all duration-300 peer-focus:-translate-y-7 peer-focus:text-xs peer-focus:text-[#7C6DFF] peer-focus:font-medium peer-[:not(:placeholder-shown)]:-translate-y-7 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-slate-400 pointer-events-none"
+              className="absolute left-11 top-1/2 -translate-y-1/2 text-sm text-[var(--text-muted)] transition-all duration-300 peer-focus:-translate-y-7 peer-focus:text-xs peer-focus:text-[var(--accent)] peer-focus:font-medium peer-[:not(:placeholder-shown)]:-translate-y-7 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-[var(--text-secondary)] pointer-events-none"
             >
               Email Address
             </label>
@@ -116,7 +116,7 @@ export default function ForgotPasswordPage() {
                 initial={{ opacity: 0, y: -10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-400 shadow-inner backdrop-blur-md"
+                className="flex items-center gap-3 rounded-xl border border-[var(--danger)]/20 bg-[var(--danger)]/10 px-4 py-3 text-sm font-medium text-[var(--danger)] shadow-inner"
               >
                 <AlertCircle className="size-4.5 shrink-0" />
                 <span>{error}</span>
@@ -130,7 +130,7 @@ export default function ForgotPasswordPage() {
               whileTap={!loading ? { scale: 0.98 } : {}}
               type="submit"
               disabled={loading || !email.trim()}
-              className="relative group h-14 w-full overflow-hidden rounded-xl bg-gradient-to-r from-[#7B6EFF] to-[#5D5FEF] font-semibold text-white shadow-[0_0_20px_rgba(123,110,255,0.3)] transition-all hover:shadow-[0_0_30px_rgba(123,110,255,0.6)] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+              className="relative group h-14 w-full overflow-hidden rounded-xl bg-gradient-to-b from-[var(--accent)] to-[var(--accent-hover)] font-semibold text-white shadow-[0_0_20px_rgba(47,111,237,0.3)] transition-all hover:shadow-[0_0_30px_rgba(47,111,237,0.5)] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
             >
               <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
               {loading ? (
@@ -144,12 +144,12 @@ export default function ForgotPasswordPage() {
             </motion.button>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-slate-400 pt-2">
-            <Link href="/login" className="hover:text-white transition-colors flex items-center gap-1">
+          <div className="flex items-center justify-between text-xs text-[var(--text-secondary)] pt-2">
+            <Link href="/login" className="hover:text-[var(--text-primary)] transition-colors flex items-center gap-1">
               <ArrowLeft className="size-3.5" />
               Back to Staff Sign In
             </Link>
-            <Link href="/portal/login" className="hover:text-white transition-colors">
+            <Link href="/portal/login" className="hover:text-[var(--text-primary)] transition-colors">
               Client Sign In
             </Link>
           </div>

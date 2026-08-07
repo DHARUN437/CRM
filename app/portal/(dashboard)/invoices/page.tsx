@@ -1,10 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getActiveClient } from "@/lib/supabase/portal"
-import { getInvoicesForClient } from "@/lib/invoices"
 import { PortalInvoices } from "@/components/portal/portal-invoices"
-
-import { NoClientNotice } from "@/components/portal/no-client-notice"
 
 import { getPortalInvoices } from "@/lib/supabase/portal-data"
 

@@ -67,12 +67,13 @@ export function ScheduleMeetingDialog({
   const open = externalOpen !== undefined ? externalOpen : internalOpen
   const setOpen = externalOnOpenChange || setInternalOpen
 
-  const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split("T")[0]
-
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [projectId, setProjectId] = useState<string>("none")
-  const [requestedDate, setRequestedDate] = useState(tomorrowStr)
+  const [requestedDate, setRequestedDate] = useState(() => {
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0]
+    return tomorrow
+  })
   const [requestedTime, setRequestedTime] = useState("10:00 AM")
   const [durationMinutes, setDurationMinutes] = useState(30)
   const [saving, setSaving] = useState(false)
@@ -107,8 +108,8 @@ export function ScheduleMeetingDialog({
       setDescription("")
       setProjectId("none")
       router.refresh()
-    } catch (err: any) {
-      setError(err.message || "Failed to schedule meeting request.")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to schedule meeting request.")
     } finally {
       setSaving(false)
     }

@@ -329,10 +329,11 @@ export function DocumentRequests({
   requests: initialRequests,
 }: DocumentRequestsProps) {
   const [requestsList, setRequestsList] = useState<PortalRequest[]>(initialRequests)
-
-  useEffect(() => {
+  const [prevInitialRequests, setPrevInitialRequests] = useState(initialRequests)
+  if (prevInitialRequests !== initialRequests) {
+    setPrevInitialRequests(initialRequests)
     setRequestsList(initialRequests)
-  }, [initialRequests])
+  }
 
   useEffect(() => {
     const supabase = createClient()

@@ -1,11 +1,19 @@
 'use client'
 
 import React from 'react'
+import dynamic from 'next/dynamic'
 import MetricCard, { MetricCardProps } from './metric-card'
 import PipelineWidget, { DealStageItem } from './pipeline-widget'
-import RevenueChart, { RevenueDataPoint } from './revenue-chart'
 import ActivityFeed, { ActivityFeedItem } from './activity-feed'
 import DealsTable, { DealTableItem } from './deals-table'
+import type { RevenueDataPoint } from './revenue-chart'
+
+const RevenueChart = dynamic(() => import('./revenue-chart'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-64 w-full animate-pulse rounded-xl bg-foreground/5" />
+  ),
+})
 
 export interface DashboardViewProps {
   metrics: MetricCardProps[]

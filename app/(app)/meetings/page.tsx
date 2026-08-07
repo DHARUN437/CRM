@@ -5,6 +5,22 @@ import { AdminMeetingsClient } from "./admin-meetings-client"
 
 export const dynamic = "force-dynamic"
 
+interface MeetingRow {
+  id: string
+  title: string
+  description: string | null
+  clients?: { name: string | null; company: string | null } | null
+  projects?: { name: string | null } | null
+  requested_date: string
+  requested_time: string
+  duration_minutes: number
+  status: string
+  admin_notes: string | null
+  confirmed_date: string | null
+  confirmed_time: string | null
+  created_at: string
+}
+
 export default async function MeetingsPage() {
   const supabase = await createClient()
   const user = await getCurrentUser()
@@ -18,7 +34,7 @@ export default async function MeetingsPage() {
     .select("*, clients(name, company), projects(name)")
     .order("created_at", { ascending: false })
 
-  const meetings = (rawMeetings ?? []).map((m: any) => ({
+  const meetings = (rawMeetings ?? []).map((m: MeetingRow) => ({
     id: m.id,
     title: m.title,
     description: m.description,

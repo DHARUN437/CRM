@@ -6,9 +6,37 @@ import { MonthlyTasksClient } from "./monthly-tasks-client"
 
 export const dynamic = "force-dynamic"
 
+type EodReportRef = { report_date: string } | { report_date: string }[] | null
+
+interface MonthlyTaskRow {
+  id: string
+  assigned_to: string
+  assigned_by: string
+  title: string
+  description: string | null
+  month: string
+  due_date: string
+  assigned_date: string | null
+  created_at: string | null
+  status: string
+  progress: number | null
+  completed_at: string | null
+  completed_via_eod_id: string | null
+  eod_reports?: EodReportRef
+  eod_task_updates?: {
+    id: string
+    work_date: string
+    note: string | null
+    employee_id: string
+  }[]
+}
+
 export default async function MonthlyTasksPage() {
   const user = await getCurrentUser()
   if (!user) redirect("/login")
+  if (user.role !== "team" && user.role !== "tl" && user.role !== "worker") {
+    redirect("/portal")
+  }
 
   const supabase = await createClient()
 
@@ -29,12 +57,12 @@ export default async function MonthlyTasksPage() {
     names.set(tm.user_id, tm.name)
   }
 
-  const tasks = (rawTasks || []).map((t: any) => {
+  const tasks = (rawTasks || []).map((t: MonthlyTaskRow) => {
     const updates = (t.eod_task_updates || []).sort(
-      (a: any, b: any) => new Date(b.work_date).getTime() - new Date(a.work_date).getTime()
+      (a, b) => new Date(b.work_date).getTime() - new Date(a.work_date).getTime()
     )
 
-    const workHistory = updates.map((u: any) => ({
+    const workHistory = updates.map((u) => ({
       id: u.id,
       workDate: u.work_date,
       employeeName: names.get(u.employee_id) || "Employee",
@@ -42,6 +70,10 @@ export default async function MonthlyTasksPage() {
     }))
 
     const lastWorkedDate = updates.length > 0 ? updates[0].work_date : null
+    const eodReports = t.eod_reports
+    const completedEodDate = Array.isArray(eodReports)
+      ? eodReports[0]?.report_date ?? null
+      : eodReports?.report_date ?? null
 
     return {
       id: t.id,
@@ -58,7 +90,7 @@ export default async function MonthlyTasksPage() {
       progress: typeof t.progress === "number" ? t.progress : (t.status === "completed" ? 100 : 0),
       completedAt: t.completed_at,
       completedViaEodId: t.completed_via_eod_id,
-      completedEodDate: t.eod_reports?.report_date || null,
+      completedEodDate,
       workHistory,
       sessionCount: workHistory.length,
       lastWorkedDate,

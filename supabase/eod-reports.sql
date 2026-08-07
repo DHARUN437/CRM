@@ -45,12 +45,20 @@ CREATE POLICY "eod_reports_select" ON public.eod_reports
     employee_id = auth.uid() OR public.is_team()
   );
 
--- Users can insert their own reports
+-- Staff (team/admin/tl/worker) can submit reports for themselves. Clients must
+-- NOT be able to create EOD entries. SECURITY: previously this was only
+-- `employee_id = auth.uid()`, which let any authenticated user (including
+-- clients) insert report rows that then flooded the admin EOD feed.
 DROP POLICY IF EXISTS "eod_reports_insert" ON public.eod_reports;
 CREATE POLICY "eod_reports_insert" ON public.eod_reports
   FOR INSERT TO authenticated
   WITH CHECK (
     employee_id = auth.uid()
+    AND (
+      public.is_team()
+      OR public.is_tl()
+      OR public.is_worker()
+    )
   );
 
 -- Users can update their own reports

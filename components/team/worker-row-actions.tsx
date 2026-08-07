@@ -100,8 +100,8 @@ export function WorkerRowActions({ member }: { member: TeamMember }) {
         setDeleteOpen(false)
         router.refresh()
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to delete team member.")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete team member.")
     } finally {
       setDeleting(false)
     }

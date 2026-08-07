@@ -4,11 +4,13 @@ import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 
 export function PortalShell({ children }: { children: React.ReactNode }) {
-  const [isBooting, setIsBooting] = useState(false)
+  const [isBooting] = useState(() => {
+    if (typeof sessionStorage === "undefined") return false
+    return !!sessionStorage.getItem("auth-booted")
+  })
 
   useEffect(() => {
-    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("auth-booted")) {
-      setIsBooting(true)
+    if (typeof sessionStorage !== "undefined") {
       sessionStorage.removeItem("auth-booted")
     }
   }, [])

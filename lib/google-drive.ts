@@ -40,7 +40,7 @@ export async function getGoogleDriveStatus(): Promise<GoogleDriveStatus> {
         folderIdConfigured,
       }
     }
-  } catch (err: any) {
+  } catch (err) {
     console.error("Failed to query system_settings status:", err)
   }
 
@@ -167,7 +167,7 @@ export async function getOrCreateFolder({
     return searchData.files[0].id
   }
 
-  const metadata: Record<string, any> = {
+  const metadata: Record<string, string | string[]> = {
     name: folderName,
     mimeType: "application/vnd.google-apps.folder",
   }
@@ -209,7 +209,7 @@ export async function uploadFileToDrive({
   const accessToken = await getFreshAccessToken()
   const targetFolder = folderId || process.env.GOOGLE_DRIVE_FOLDER_ID
 
-  const metadata: Record<string, any> = {
+  const metadata: Record<string, string | string[]> = {
     name: fileName,
     mimeType,
   }

@@ -93,7 +93,7 @@ async function main() {
     { user_id: otherWorkerUser.id, role: "worker", name: "P2 Other Worker", email: otherWorkerEmail },
     "user_id"
   )
-  const adminRow = await ensureRow(
+  await ensureRow(
     "team_members",
     { user_id: adminUser.id, role: "team", name: "P2 Admin", email: adminEmail },
     "user_id"

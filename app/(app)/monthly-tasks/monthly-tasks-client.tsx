@@ -95,7 +95,7 @@ export function MonthlyTasksClient({
   const [assignTo, setAssignTo] = useState<string>(employees[0]?.id || "")
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [dueDate, setDueDate] = useState(new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0])
+  const [dueDate, setDueDate] = useState(() => new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -122,7 +122,7 @@ export function MonthlyTasksClient({
       }
 
       router.refresh()
-    } catch (err: any) {
+    } catch (err) {
       console.error("Mark complete error:", err)
     } finally {
       setCompletingTaskId(null)
@@ -163,8 +163,8 @@ export function MonthlyTasksClient({
       setTitle("")
       setDescription("")
       router.refresh()
-    } catch (err: any) {
-      setError(err.message || "Failed to assign monthly task.")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to assign monthly task.")
     } finally {
       setSaving(false)
     }

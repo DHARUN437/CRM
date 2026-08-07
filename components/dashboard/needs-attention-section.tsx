@@ -35,7 +35,7 @@ function formatCurrency(amount: number) {
 
 export interface OverdueInvoiceItem {
   id: string
-  invoice_number: string
+  invoice_number: string | null
   client_name: string
   project_name?: string | null
   amount: number
@@ -52,7 +52,7 @@ export interface AtRiskClientItem {
 
 export interface TeamMemberWorkloadItem {
   id: string
-  name: string
+  name: string | null
   active_count: number
   is_overloaded?: boolean
 }

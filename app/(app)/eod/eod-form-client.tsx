@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Upload, FileCheck, CheckCircle2, Calendar, HardDrive, AlertCircle, FileText } from "lucide-react"
+import { Loader2, FileCheck, CheckCircle2, Calendar, HardDrive, AlertCircle } from "lucide-react"
 
 export interface MonthlyTaskItem {
   id: string
@@ -19,9 +19,29 @@ export interface MonthlyTaskItem {
   status: "not_started" | "in_progress" | "completed"
 }
 
+interface EODTaskUpdate {
+  monthly_task_id: string
+  note?: string | null
+}
+
+interface EODReport {
+  report_date: string
+  work_summary: string
+  blockers?: string | null
+  eod_task_updates?: EODTaskUpdate[]
+}
+
+interface UploadedDriveFile {
+  google_drive_file_id: string
+  file_name: string
+  file_url: string
+  file_size: number
+  mime_type: string
+}
+
 interface EODFormClientProps {
   userId: string
-  initialReport: any | null
+  initialReport: EODReport | null
   initialTasks: MonthlyTaskItem[]
 }
 
@@ -44,7 +64,7 @@ export function EODFormClient({
 
   // Task selection, completion, & per-task note state
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>(
-    (initialReport?.eod_task_updates || []).map((u: any) => u.monthly_task_id)
+    (initialReport?.eod_task_updates || []).map((u: EODTaskUpdate) => u.monthly_task_id)
   )
   const [completedTaskIds, setCompletedTaskIds] = useState<string[]>([])
   const [taskNotesMap, setTaskNotesMap] = useState<Record<string, string>>(() => {
@@ -85,7 +105,7 @@ export function EODFormClient({
     setError(null)
     setSuccess(null)
 
-    let uploadedDriveFiles: any[] = []
+    let uploadedDriveFiles: UploadedDriveFile[] = []
 
     try {
       // 1. Upload files to Google Drive FIRST if files selected
@@ -140,9 +160,9 @@ export function EODFormClient({
       setSuccess("EOD Report & Work Sessions successfully saved to Google Drive & Task History!")
       setSelectedFiles([])
       router.refresh()
-    } catch (err: any) {
+    } catch (err) {
       console.error("EOD Submission error:", err)
-      setError(err.message || "Failed to submit EOD report.")
+      setError(err instanceof Error ? err.message : "Failed to submit EOD report.")
     } finally {
       setSubmitting(false)
       setUploadingFiles(false)
