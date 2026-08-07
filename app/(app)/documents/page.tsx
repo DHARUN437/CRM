@@ -60,26 +60,27 @@ export default async function DocumentsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h2 className="text-balance text-2xl font-semibold tracking-tight">
+        <h2 className="text-balance text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
           Client Documents
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-[var(--text-secondary)]">
           {isWorker
             ? "Documents uploaded by clients for your assigned projects — preview or download to use in development."
             : "Documents uploaded by clients through the portal — preview or download to use in development."}
         </p>
       </div>
 
+      {/* Summary Stat Cards with Visible Executive Dark Theme Container */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="flex items-center gap-3 p-4">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-foreground/5 text-foreground">
+          <Card key={stat.label} className="bg-[var(--surface)] border border-[var(--border)]/60 shadow-sm p-4 rounded-2xl">
+            <CardContent className="flex items-center gap-3.5 p-0">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-tint)] text-[var(--accent)] font-semibold shadow-xs">
                 <stat.icon className="size-5" />
               </span>
               <div className="flex flex-col">
-                <span className="text-2xl font-semibold tracking-tight">{stat.value}</span>
-                <span className="text-xs text-muted-foreground">{stat.label}</span>
+                <span className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">{stat.value}</span>
+                <span className="text-xs text-[var(--text-secondary)] font-medium">{stat.label}</span>
               </div>
             </CardContent>
           </Card>
@@ -88,8 +89,8 @@ export default async function DocumentsPage() {
 
       <section className="flex flex-col gap-4">
         <CardHeader className="px-0 pb-0">
-          <CardTitle className="text-lg">All shared documents</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-lg text-[var(--text-primary)]">All shared documents</CardTitle>
+          <CardDescription className="text-xs text-[var(--text-secondary)]">
             {docRows.length} file{docRows.length === 1 ? "" : "s"} available for the development team.
           </CardDescription>
         </CardHeader>

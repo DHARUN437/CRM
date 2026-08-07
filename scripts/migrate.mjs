@@ -57,6 +57,18 @@ const MIGRATIONS = [
   "team-chat-reads.sql",
   "fix-clients-recursion.sql",
   "fix-clients-recursion-2.sql",
+  "phase1-access-control.sql",
+  "phase2-data-integrity.sql",
+  "phase2-soft-delete-rls-fix.sql",
+  "phase2-soft-delete-rpc.sql",
+  "google-drive.sql",
+  "eod-reports.sql",
+  "meetings.sql",
+  "monthly-tasks.sql",
+  "eod-task-updates.sql",
+  "monthly-tasks-progress.sql",
+  "project-scoping-rls.sql",
+  "eod-scoping-rls.sql",
 ]
 
 async function run(sql) {

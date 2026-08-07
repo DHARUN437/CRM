@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { getCurrentUser } from "@/lib/supabase/session"
+import { isValidEmail } from "@/lib/validation"
 
 export const dynamic = "force-dynamic"
 
@@ -18,6 +19,17 @@ export async function POST(request: Request) {
 
   if (!name || !email || !password) {
     return NextResponse.json({ error: "name, email and password are required" }, { status: 400 })
+  }
+
+  if (!isValidEmail(email)) {
+    return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 })
+  }
+
+  if (password.length < 6) {
+    return NextResponse.json(
+      { error: "Password must be at least 6 characters" },
+      { status: 400 }
+    )
   }
 
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {

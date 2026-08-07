@@ -1,7 +1,6 @@
 import { Analytics } from "@vercel/analytics/next"
 import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
-import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import "./globals.css"
 
@@ -36,7 +35,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   viewportFit: "cover",
   colorScheme: "dark",
-  themeColor: "#0A0A0F",
+  themeColor: "#0B0B0F",
 }
 
 export default function RootLayout({
@@ -47,20 +46,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} dark bg-[#0A0A0F] text-[#F4F4F6]`}
-      style={{ colorScheme: "dark", backgroundColor: "#0A0A0F" }}
+      className={`${geistSans.variable} ${geistMono.variable} dark bg-[var(--background)] text-[var(--text-primary)]`}
+      style={{ colorScheme: "dark", backgroundColor: "#0B0B0F" }}
       suppressHydrationWarning
     >
-      <body className="font-sans antialiased bg-[#0A0A0F] text-[#F4F4F6] min-h-svh w-full overflow-x-hidden" suppressHydrationWarning>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          forcedTheme="dark"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
-          <TooltipProvider delay={200}>{children}</TooltipProvider>
-        </ThemeProvider>
+      <body className="font-sans antialiased bg-[var(--background)] text-[var(--text-primary)] min-h-svh w-full overflow-x-hidden" suppressHydrationWarning>
+        <TooltipProvider delay={200}>{children}</TooltipProvider>
         {process.env.NODE_ENV === "production" && <Analytics />}
       </body>
     </html>

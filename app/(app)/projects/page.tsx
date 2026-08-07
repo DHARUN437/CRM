@@ -33,23 +33,36 @@ export default async function ProjectsPage() {
     .select("*, clients(name, company)")
     .order("created_at", { ascending: false })
 
-  if (isWorker && myMember) {
-    projectQuery = supabase
-      .from("projects")
-      .select(
-        "*, clients(name, company), project_assignments!inner(team_member_id)"
-      )
-      .eq("project_assignments.team_member_id", myMember.id)
-      .order("created_at", { ascending: false })
-  }
+  if ((isWorker || isTL) && myMember) {
+    const { data: myAssignments } = await supabase
+      .from("project_assignments")
+      .select("project_id")
+      .eq("team_member_id", myMember.id)
 
-  if (isTL && myMember) {
-    // TL sees projects where they are the TL
-    projectQuery = supabase
-      .from("projects")
-      .select("*, clients(name, company)")
-      .eq("tl_id", myMember.id)
-      .order("created_at", { ascending: false })
+    const assignedIds = new Set((myAssignments ?? []).map((a) => a.project_id))
+
+    if (isTL) {
+      const { data: tlProjects } = await supabase
+        .from("projects")
+        .select("id")
+        .eq("tl_id", myMember.id)
+      ;(tlProjects ?? []).forEach((p) => assignedIds.add(p.id))
+    }
+
+    const allAssignedIds = Array.from(assignedIds)
+
+    if (allAssignedIds.length > 0) {
+      projectQuery = supabase
+        .from("projects")
+        .select("*, clients(name, company)")
+        .in("id", allAssignedIds)
+        .order("created_at", { ascending: false })
+    } else {
+      projectQuery = supabase
+        .from("projects")
+        .select("*, clients(name, company)")
+        .eq("id", "00000000-0000-0000-0000-000000000000")
+    }
   }
 
   const { data: projects } = await projectQuery
@@ -124,16 +137,16 @@ export default async function ProjectsPage() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="flex items-center gap-3 p-4">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-foreground/5 text-foreground">
+          <Card key={stat.label} className="bg-[var(--surface)] border border-[var(--border)]/60 shadow-sm p-4 rounded-2xl">
+            <CardContent className="flex items-center gap-3.5 p-0">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-tint)] text-[var(--accent)] font-semibold shadow-xs">
                 <stat.icon className="size-5" />
               </span>
               <div className="flex flex-col">
-                <span className="text-2xl font-semibold tracking-tight">
+                <span className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
                   {stat.value}
                 </span>
-                <span className="text-xs text-muted-foreground">{stat.label}</span>
+                <span className="text-xs text-[var(--text-secondary)] font-medium">{stat.label}</span>
               </div>
             </CardContent>
           </Card>

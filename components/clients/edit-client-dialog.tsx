@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Loader2, Pencil } from "lucide-react"
 import type { ClientProfile } from "@/lib/portal-types"
+import { isValidPhone } from "@/lib/validation"
 
 interface EditClientDialogProps {
   client: ClientProfile
@@ -32,6 +33,10 @@ export function EditClientDialog({ client }: EditClientDialogProps) {
 
   async function handleSave() {
     if (!name.trim()) return
+    if (phone && !isValidPhone(phone)) {
+      setError("Enter a valid phone number")
+      return
+    }
     setLoading(true)
     setError(null)
 

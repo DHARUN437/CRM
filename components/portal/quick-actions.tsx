@@ -1,35 +1,67 @@
 "use client"
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Plus, HelpCircle, Upload, Calendar, Receipt } from "lucide-react"
 import { motion } from "framer-motion"
-
-const actions = [
-  { label: "New Project", icon: Plus },
-  { label: "Request Support", icon: HelpCircle },
-  { label: "Upload Document", icon: Upload },
-  { label: "Schedule Meeting", icon: Calendar },
-  { label: "View Invoices", icon: Receipt },
-]
+import Link from "next/link"
+import { ScheduleMeetingDialog } from "./schedule-meeting-dialog"
 
 export function QuickActions() {
+  const [scheduleOpen, setScheduleOpen] = useState(false)
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2, duration: 0.4 }}
-      className="flex flex-wrap items-center gap-3 mt-4"
-    >
-      {actions.map((action, idx) => (
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.4 }}
+        className="flex flex-wrap items-center gap-3 mt-4"
+      >
+        <Link href="/portal/requests">
+          <Button
+            variant="outline"
+            className="rounded-full bg-card/60 backdrop-blur-md hover:bg-card hover:-translate-y-0.5 transition-all shadow-sm text-sm border-border/50"
+          >
+            <Plus className="mr-2 size-4 text-[var(--accent)]" />
+            New Feature Request
+          </Button>
+        </Link>
+
         <Button
-          key={idx}
           variant="outline"
+          onClick={() => setScheduleOpen(true)}
           className="rounded-full bg-card/60 backdrop-blur-md hover:bg-card hover:-translate-y-0.5 transition-all shadow-sm text-sm border-border/50"
         >
-          <action.icon className="mr-2 size-4 text-primary" />
-          {action.label}
+          <Calendar className="mr-2 size-4 text-[var(--accent)]" />
+          Schedule Meeting
         </Button>
-      ))}
-    </motion.div>
+
+        <Link href="/portal/documents">
+          <Button
+            variant="outline"
+            className="rounded-full bg-card/60 backdrop-blur-md hover:bg-card hover:-translate-y-0.5 transition-all shadow-sm text-sm border-border/50"
+          >
+            <Upload className="mr-2 size-4 text-[var(--accent)]" />
+            Upload Document
+          </Button>
+        </Link>
+
+        <Link href="/portal/invoices">
+          <Button
+            variant="outline"
+            className="rounded-full bg-card/60 backdrop-blur-md hover:bg-card hover:-translate-y-0.5 transition-all shadow-sm text-sm border-border/50"
+          >
+            <Receipt className="mr-2 size-4 text-[var(--accent)]" />
+            View Invoices
+          </Button>
+        </Link>
+      </motion.div>
+
+      <ScheduleMeetingDialog
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
+      />
+    </>
   )
 }

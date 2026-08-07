@@ -19,6 +19,7 @@ export interface Lead {
   score: number
   source: string | null
   owner: string | null
+  ownerId: string | null
   updated_at: string
   tags: string[]
 }

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import { AppBackground } from "@/components/ui/app-background"
 import { MobileBottomNav } from "@/components/portal/mobile-bottom-nav"
 import { CommandPalette } from "@/components/portal/command-palette"
+import { PortalRealtimeSync } from "@/components/portal/portal-live"
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -17,6 +18,7 @@ export default async function PortalLayout({ children }: { children: React.React
   return (
     <div className="flex min-h-screen flex-col bg-transparent">
       <AppBackground />
+      <PortalRealtimeSync />
       <PortalShell>
         <PortalHeader
           clientId={client?.id ?? null}

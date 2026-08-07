@@ -97,11 +97,21 @@ export default async function ProjectDetailPage({
     if (!assignment) notFound()
   }
 
-  // TL may only open projects where they are the lead.
+  // TL may open projects where they are the lead or an assigned member.
   if (isTL) {
     if (!myMember) notFound()
-    const isTLofProject = project.tl_id === myMember!.id
-    if (!isTLofProject) notFound()
+    const isTLofProject = project.tl_id === myMember.id
+    let isAssignedTL = isTLofProject
+    if (!isAssignedTL) {
+      const { data: assignment } = await supabase
+        .from("project_assignments")
+        .select("id")
+        .eq("project_id", id)
+        .eq("team_member_id", myMember.id)
+        .maybeSingle()
+      isAssignedTL = Boolean(assignment)
+    }
+    if (!isAssignedTL) notFound()
   }
 
   // Can the current user manage worker assignments? (Admin always, TL for their project)
@@ -392,112 +402,117 @@ export default async function ProjectDetailPage({
             )}
           </section>
 
-          <section className="flex flex-col gap-4">
-            <CardHeader className="px-0 pb-0">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Requests from client</CardTitle>
-                {/* Both admins and workers can request info/files */}
-                <RequestDocumentDialog projectId={id} />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Request files or information from the client. They respond directly
-                through their portal — by uploading a file or typing a reply.
-              </p>
-            </CardHeader>
+          {/* Client Requests & Feature Requests — Visible to Admin and TL only (hidden from Workers) */}
+          {(isAdmin || isTL) && (
+            <>
+              <section className="flex flex-col gap-4">
+                <CardHeader className="px-0 pb-0">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">Requests from client</CardTitle>
+                    <RequestDocumentDialog projectId={id} />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Request files or information from the client. They respond directly
+                    through their portal — by uploading a file or typing a reply.
+                  </p>
+                </CardHeader>
 
-            {!requests?.length ? (
-              <Card>
-                <CardContent className="flex flex-col items-center gap-2 p-8 text-center text-sm text-muted-foreground">
-                  <FileQuestion className="size-8 text-muted-foreground/50" />
-                  No requests yet — ask the client for what you need.
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="flex flex-col overflow-hidden rounded-xl border border-foreground/10">
-                {(requests as unknown as {
-                  id: string
-                  title: string
-                  description: string | null
-                  status: "pending" | "fulfilled"
-                  request_type: "document" | "info"
-                  priority: "normal" | "urgent"
-                  text_response: string | null
-                  requested_at: string
-                  fulfilled_at: string | null
-                  linked_document_id: string | null
-                }[]).map((request, index) => {
-                  const linkedDoc = documents?.find(
-                    (d) => d.id === request.linked_document_id
-                  )
-                  return (
-                    <div key={request.id}>
-                      {index > 0 && <Separator />}
-                      <div className="flex flex-col gap-2 bg-background p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex min-w-0 flex-col gap-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="truncate text-sm font-medium">
-                                {request.title}
-                              </p>
-                              <Badge variant="outline" className="text-xs shrink-0">
-                                {request.request_type === "info" ? "Info" : "File"}
-                              </Badge>
-                              {request.priority === "urgent" && (
-                                <Badge className="bg-destructive/15 text-destructive text-xs shrink-0">
-                                  Urgent
+                {!requests?.length ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center gap-2 p-8 text-center text-sm text-muted-foreground">
+                      <FileQuestion className="size-8 text-muted-foreground/50" />
+                      No requests yet — ask the client for what you need.
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="flex flex-col overflow-hidden rounded-xl border border-foreground/10">
+                    {(requests as unknown as {
+                      id: string
+                      title: string
+                      description: string | null
+                      status: "pending" | "fulfilled"
+                      request_type: "document" | "info"
+                      priority: "normal" | "urgent"
+                      text_response: string | null
+                      requested_at: string
+                      fulfilled_at: string | null
+                      linked_document_id: string | null
+                    }[]).map((request, index) => {
+                      const linkedDoc = documents?.find(
+                        (d) => d.id === request.linked_document_id
+                      )
+                      return (
+                        <div key={request.id}>
+                          {index > 0 && <Separator />}
+                          <div className="flex flex-col gap-2 bg-background p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex min-w-0 flex-col gap-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="truncate text-sm font-medium">
+                                    {request.title}
+                                  </p>
+                                  <Badge variant="outline" className="text-xs shrink-0">
+                                    {request.request_type === "info" ? "Info" : "File"}
+                                  </Badge>
+                                  {request.priority === "urgent" && (
+                                    <Badge className="bg-destructive/15 text-destructive text-xs shrink-0">
+                                      Urgent
+                                    </Badge>
+                                  )}
+                                </div>
+                                {request.description && (
+                                  <p className="line-clamp-2 text-xs text-muted-foreground">
+                                    {request.description}
+                                  </p>
+                                )}
+                                <p className="text-xs text-muted-foreground">
+                                  {request.status === "fulfilled"
+                                    ? `Received${linkedDoc ? ` — ${linkedDoc.name}` : ""} · ${formatDate(request.fulfilled_at)}`
+                                    : `Requested ${formatDate(request.requested_at)}`}
+                                </p>
+                              </div>
+                              {request.status === "fulfilled" ? (
+                                <Badge className="shrink-0 bg-success/15 text-success">
+                                  <CheckCircle2 className="size-3" />
+                                  Received
                                 </Badge>
+                              ) : (
+                                <Badge variant="outline" className="shrink-0">Pending</Badge>
                               )}
                             </div>
-                            {request.description && (
-                              <p className="line-clamp-2 text-xs text-muted-foreground">
-                                {request.description}
-                              </p>
+                            {/* Show text response if provided */}
+                            {request.text_response && (
+                              <div className="rounded-lg border border-success/20 bg-success/5 px-3 py-2 text-sm">
+                                <p className="text-xs font-medium text-success mb-1">Client replied:</p>
+                                <p className="text-foreground whitespace-pre-wrap">{request.text_response}</p>
+                              </div>
                             )}
-                            <p className="text-xs text-muted-foreground">
-                              {request.status === "fulfilled"
-                                ? `Received${linkedDoc ? ` — ${linkedDoc.name}` : ""} · ${formatDate(request.fulfilled_at)}`
-                                : `Requested ${formatDate(request.requested_at)}`}
-                            </p>
                           </div>
-                          {request.status === "fulfilled" ? (
-                            <Badge className="shrink-0 bg-success/15 text-success">
-                              <CheckCircle2 className="size-3" />
-                              Received
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="shrink-0">Pending</Badge>
-                          )}
                         </div>
-                        {/* Show text response if provided */}
-                        {request.text_response && (
-                          <div className="rounded-lg border border-success/20 bg-success/5 px-3 py-2 text-sm">
-                            <p className="text-xs font-medium text-success mb-1">Client replied:</p>
-                            <p className="text-foreground whitespace-pre-wrap">{request.text_response}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </section>
-          <section className="flex flex-col gap-4">
-            <CardHeader className="px-0 pb-0">
-              <div className="flex items-center gap-2">
-                <Lightbulb className="size-4" />
-                <CardTitle className="text-lg">Feature requests</CardTitle>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Requests from the client — update the status as you work on them.
-              </p>
-            </CardHeader>
-            <FeatureRequestsLive
-              projectId={id}
-              isAdmin={isAdmin}
-              initialRequests={featureRows}
-            />
-          </section>
+                      )
+                    })}
+                  </div>
+                )}
+              </section>
+
+              <section className="flex flex-col gap-4">
+                <CardHeader className="px-0 pb-0">
+                  <div className="flex items-center gap-2">
+                    <Lightbulb className="size-4" />
+                    <CardTitle className="text-lg">Feature requests</CardTitle>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Requests from the client — update the status as you work on them.
+                  </p>
+                </CardHeader>
+                <FeatureRequestsLive
+                  projectId={id}
+                  isAdmin={isAdmin}
+                  initialRequests={featureRows}
+                />
+              </section>
+            </>
+          )}
 
           {/* Time Tracking */}
           <section className="flex flex-col gap-4">

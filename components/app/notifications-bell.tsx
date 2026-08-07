@@ -125,7 +125,7 @@ export function NotificationsBell() {
             className="fixed inset-0 z-40"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 top-11 z-50 w-[calc(100vw-32px)] max-w-[360px] rounded-[20px] border border-border/60 dark:border-[#2A2A38] bg-popover/95 dark:bg-[#17171F]/95 p-4 shadow-layered backdrop-blur-xl text-popover-foreground animate-in fade-in-0 zoom-in-95">
+          <div className="absolute right-0 top-11 z-50 w-[calc(100vw-32px)] max-w-[360px] rounded-[20px] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-layered backdrop-blur-xl text-[var(--text-primary)] animate-in fade-in-0 zoom-in-95">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center gap-2">
                 <h4 className="font-semibold text-sm">Notifications</h4>

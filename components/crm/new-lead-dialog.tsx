@@ -1,6 +1,5 @@
 "use client"
 
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -15,8 +14,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
 import { useState, type ReactElement } from "react"
-import { Loader2, Plus } from "lucide-react"
+import { AlertTriangle, Loader2, Plus } from "lucide-react"
 import { type LeadStage } from "@/lib/crm"
+import { isNonNegativeNumber } from "@/lib/validation"
 
 interface NewLeadDialogProps {
   presetStage?: LeadStage
@@ -32,34 +32,50 @@ export function NewLeadDialog({ presetStage = "new", trigger }: NewLeadDialogPro
   const [source, setSource] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [duplicates, setDuplicates] = useState<string[]>([])
+
+  function handleOpen(open: boolean) {
+    setOpen(open)
+    if (!open) {
+      setDuplicates([])
+      setError(null)
+    }
+  }
 
   async function handleCreate() {
     if (!company.trim()) return
+    const valueNum = value === "" ? 0 : Number(value)
+    if (value !== "" && !isNonNegativeNumber(valueNum)) {
+      setError("Deal value must be a non-negative number")
+      return
+    }
     setSaving(true)
     setError(null)
+    setDuplicates([])
 
-    const supabase = createClient()
-    const { data: currentUser } = await supabase.auth.getUser()
-    const { data: me } = await supabase
-      .from("team_members")
-      .select("id")
-      .eq("user_id", currentUser.user?.id ?? "")
-      .maybeSingle()
-
-    const { error: err } = await supabase.from("leads").insert({
-      company: company.trim(),
-      contact: contact.trim(),
-      value: value ? Number(value) : 0,
-      stage: presetStage,
-      score: 0,
-      source: source.trim() || null,
-      owner_id: me?.id ?? null,
-      tags: [],
+    const res = await fetch("/api/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        company: company.trim(),
+        contact: contact.trim(),
+        value: valueNum,
+        stage: presetStage,
+        source: source.trim() || null,
+      }),
     })
+    const json = await res.json().catch(() => ({}))
 
     setSaving(false)
-    if (err) {
-      setError(err.message)
+    if (!res.ok) {
+      setError(json.error ?? "Could not add lead.")
+      return
+    }
+
+    const leadDuplicates = json?.duplicateLeads ?? []
+    const clientDuplicates = json?.duplicateClients ?? []
+    if (leadDuplicates.length > 0 || clientDuplicates.length > 0) {
+      setDuplicates([...leadDuplicates, ...clientDuplicates])
       return
     }
 
@@ -72,7 +88,7 @@ export function NewLeadDialog({ presetStage = "new", trigger }: NewLeadDialogPro
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpen}>
       <DialogTrigger render={trigger ?? <Button size="sm"><Plus /> New lead</Button>} />
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -124,6 +140,32 @@ export function NewLeadDialog({ presetStage = "new", trigger }: NewLeadDialogPro
               />
             </div>
           </div>
+          {duplicates.length > 0 && (
+            <p className="flex items-start gap-1.5 rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <span>
+                A record already exists for{" "}
+                <span className="font-semibold">{duplicates[0]}</span>. This lead was
+                added anyway —{" "}
+                <button
+                  type="button"
+                  className="font-semibold underline underline-offset-2"
+                  onClick={() => {
+                    setOpen(false)
+                    setDuplicates([])
+                    setCompany("")
+                    setContact("")
+                    setValue("")
+                    setSource("")
+                    router.refresh()
+                  }}
+                >
+                  view the pipeline
+                </button>
+                .
+              </span>
+            </p>
+          )}
           {error && (
             <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}

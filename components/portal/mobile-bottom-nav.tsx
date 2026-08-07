@@ -17,7 +17,7 @@ export function MobileBottomNav({ clientId, pendingRequestCount }: MobileBottomN
 
   return (
     <div className="fixed inset-x-0 bottom-6 z-50 sm:hidden px-4">
-      <div className="mx-auto flex h-16 w-full max-w-sm items-center justify-between rounded-full border border-[#2A2A38] bg-[#17171F]/90 px-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+      <div className="mx-auto flex h-16 w-full max-w-sm items-center justify-between rounded-full border border-[var(--border)] bg-[var(--surface)] px-6 shadow-sm backdrop-blur-xl">
         {portalLinks.map((link) => {
           const active = isActive(pathname, link.href)
           return (
@@ -29,18 +29,18 @@ export function MobileBottomNav({ clientId, pendingRequestCount }: MobileBottomN
               {active && (
                 <motion.div
                   layoutId="mobile-active-nav-pill"
-                  className="absolute inset-0 rounded-full bg-primary/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.5)]"
+                  className="absolute inset-0 rounded-full bg-[var(--accent-tint)]"
                   initial={false}
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
-              <span className={cn("relative z-10", active ? "text-primary" : "text-muted-foreground")}>
+              <span className={cn("relative z-10", active ? "text-[var(--accent)]" : "text-[var(--text-secondary)]")}>
                 <link.icon className="size-5" />
                 {link.href === "/portal/requests" && clientId && (
                   <PendingRequestsBadge
                     clientId={clientId}
                     initialCount={pendingRequestCount}
-                    className="absolute -top-1 -right-2 border-background"
+                    className="absolute -top-1 -right-2 border-[var(--surface)]"
                   />
                 )}
               </span>

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useState } from "react"
 import { Loader2, Mail, Lock, Eye, EyeOff, AlertCircle, ArrowRight } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -129,6 +130,12 @@ export function PortalLoginForm() {
           </div>
           <span className="group-hover:text-slate-300 transition-colors">Remember this device</span>
         </label>
+        <Link
+          href="/forgot-password"
+          className="text-xs font-semibold text-[#7C6DFF] hover:text-[#9B8CFF] transition-colors hover:underline"
+        >
+          Forgot password?
+        </Link>
       </div>
 
       <AnimatePresence>

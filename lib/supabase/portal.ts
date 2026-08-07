@@ -2,22 +2,40 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type { ClientProfile } from "@/lib/portal-types"
 
 /**
- * Returns the pending request count for a given client ID.
+ * Returns the pending request count for a given client ID across their projects.
  */
 export async function getPendingRequestCount(
   supabase: SupabaseClient,
   clientId: string
 ): Promise<number> {
   try {
-    const { count, error } = await supabase
-      .from("client_requests")
-      .select("id", { count: "exact", head: true })
+    const { data: projects, error: projError } = await supabase
+      .from("projects")
+      .select("id")
       .eq("client_id", clientId)
-      .eq("status", "pending")
 
-    if (error) return 0
+    if (projError) {
+      console.error("Error querying client projects in getPendingRequestCount:", projError.message)
+      return 0
+    }
+
+    if (!projects || projects.length === 0) return 0
+    const projectIds = projects.map((p) => p.id)
+
+    const { count, error } = await supabase
+      .from("document_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .in("project_id", projectIds)
+
+    if (error) {
+      console.error("Error querying document_requests in getPendingRequestCount:", error.message)
+      return 0
+    }
+
     return count ?? 0
-  } catch {
+  } catch (err: any) {
+    console.error("Exception in getPendingRequestCount:", err?.message || err)
     return 0
   }
 }

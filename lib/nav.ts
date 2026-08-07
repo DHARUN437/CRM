@@ -7,6 +7,10 @@ import {
   Receipt,
   UsersRound,
   MessageSquareText,
+  Settings,
+  Calendar,
+  FileCheck,
+  CheckSquare,
   type LucideIcon,
 } from "lucide-react"
 
@@ -36,14 +40,22 @@ export const navSections: NavSection[] = [
   {
     title: "Operations",
     items: [
+      { label: "Daily EOD", href: "/eod", icon: FileCheck },
+      { label: "EOD Reports", href: "/eod-reports", icon: FileText },
+      { label: "Monthly Tasks", href: "/monthly-tasks", icon: CheckSquare },
       { label: "Clients", href: "/clients", icon: Contact },
+      { label: "Meetings", href: "/meetings", icon: Calendar },
       { label: "Documents", href: "/documents", icon: FileText },
       { label: "Invoices", href: "/invoices", icon: Receipt },
     ],
   },
   {
     title: "Organization",
-    items: [{ label: "Team", href: "/team", icon: UsersRound }],
+    items: [
+      { label: "Team", href: "/team", icon: UsersRound },
+      { label: "Audit Log", href: "/audit", icon: FileText },
+      { label: "Settings", href: "/settings", icon: Settings },
+    ],
   },
 ]
 
@@ -56,14 +68,17 @@ export function navSectionsFor(role: string | null): NavSection[] {
       {
         title: "Workspace",
         items: [
-          { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
           { label: "My Projects", href: "/projects", icon: FolderKanban },
           { label: "Team Chat", href: "/chat", icon: MessageSquareText },
         ],
       },
       {
         title: "Operations",
-        items: [{ label: "Documents", href: "/documents", icon: FileText }],
+        items: [
+          { label: "Daily EOD", href: "/eod", icon: FileCheck },
+          { label: "My Tasks", href: "/monthly-tasks", icon: CheckSquare },
+          { label: "Documents", href: "/documents", icon: FileText },
+        ],
       },
     ]
   }
@@ -72,14 +87,19 @@ export function navSectionsFor(role: string | null): NavSection[] {
       {
         title: "Workspace",
         items: [
-          { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
           { label: "My Projects", href: "/projects", icon: FolderKanban },
           { label: "Team Chat", href: "/chat", icon: MessageSquareText },
         ],
       },
       {
         title: "Operations",
-        items: [{ label: "Documents", href: "/documents", icon: FileText }],
+        items: [
+          { label: "Daily EOD", href: "/eod", icon: FileCheck },
+          { label: "EOD Reports", href: "/eod-reports", icon: FileText },
+          { label: "Monthly Tasks", href: "/monthly-tasks", icon: CheckSquare },
+          { label: "Meetings", href: "/meetings", icon: Calendar },
+          { label: "Documents", href: "/documents", icon: FileText },
+        ],
       },
       {
         title: "Organization",

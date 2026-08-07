@@ -1,6 +1,5 @@
 "use client"
 
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -92,7 +91,7 @@ export function RequestFeatureDialog({
     }
   }
 
-  const FormContent = () => (
+  const formFields = (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <Label htmlFor="fr-title">What do you need?</Label>
@@ -145,7 +144,7 @@ export function RequestFeatureDialog({
               review it and update the status.
             </DrawerDescription>
           </DrawerHeader>
-          <FormContent />
+          {formFields}
           <DrawerFooter className="px-0 pt-4 pb-8">
             <Button onClick={handleCreate} disabled={!title.trim() || saving} className="w-full">
               {saving && <Loader2 className="size-4 animate-spin mr-2" />}
@@ -169,7 +168,7 @@ export function RequestFeatureDialog({
             review it and update the status.
           </DialogDescription>
         </DialogHeader>
-        <FormContent />
+        {formFields}
         <DialogFooter className="mt-4">
           <Button
             onClick={handleCreate}

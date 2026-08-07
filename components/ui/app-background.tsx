@@ -4,17 +4,10 @@ import { motion } from "framer-motion"
 
 export function AppBackground() {
   return (
-    <div className="fixed inset-0 z-[-1] overflow-hidden bg-background pointer-events-none">
-      {/* Deep premium radial gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(79,124,255,0.08),rgba(255,255,255,0))]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_100%_100%,rgba(34,197,94,0.03),rgba(255,255,255,0))]" />
-      
-      {/* Subtle animated vignette */}
-      <motion.div 
-        animate={{ opacity: [0.3, 0.4, 0.3] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(0,0,0,0.6)_150%)]" 
-      />
+    <div className="fixed inset-0 z-[-1] overflow-hidden bg-[var(--background)] pointer-events-none">
+      {/* Soft subtle radial ambient lighting */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(47,111,237,0.05),rgba(255,255,255,0))]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_100%_100%,rgba(22,163,74,0.03),rgba(255,255,255,0))]" />
 
       {/* Tiny subtle noise texture overlay */}
       <div 

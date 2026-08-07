@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useState } from "react"
 import { Loader2, Mail, Lock, Eye, EyeOff, AlertCircle, ArrowRight } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -43,17 +44,24 @@ export function LoginForm() {
       if (nextTarget) {
         try {
           nextTarget = decodeURIComponent(nextTarget)
+          const role = user?.app_metadata?.role as string | undefined
           if (!nextTarget.startsWith("/")) {
-            nextTarget = user?.app_metadata?.role === "client" ? "/portal" : "/dashboard"
+            nextTarget = role === "client" ? "/portal" : (role === "worker" || role === "tl") ? "/projects" : "/dashboard"
           }
         } catch {
-          nextTarget = user?.app_metadata?.role === "client" ? "/portal" : "/dashboard"
+          const role = user?.app_metadata?.role as string | undefined
+          nextTarget = role === "client" ? "/portal" : (role === "worker" || role === "tl") ? "/projects" : "/dashboard"
         }
         router.push(nextTarget)
-      } else if (user?.app_metadata?.role === "client") {
-        router.push("/portal")
       } else {
-        router.push("/dashboard")
+        const role = user?.app_metadata?.role as string | undefined
+        if (role === "client") {
+          router.push("/portal")
+        } else if (role === "worker" || role === "tl") {
+          router.push("/projects")
+        } else {
+          router.push("/dashboard")
+        }
       }
       router.refresh()
     }, 1500)
@@ -135,6 +143,12 @@ export function LoginForm() {
           </div>
           <span className="group-hover:text-slate-300 transition-colors">Keep me signed in</span>
         </label>
+        <Link
+          href="/forgot-password"
+          className="text-xs font-semibold text-[#7C6DFF] hover:text-[#9B8CFF] transition-colors hover:underline"
+        >
+          Forgot password?
+        </Link>
       </div>
 
       <AnimatePresence>

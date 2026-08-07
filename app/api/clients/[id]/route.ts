@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/supabase/session"
+import { isValidPhone } from "@/lib/validation"
 
 export const dynamic = "force-dynamic"
 
@@ -29,6 +30,10 @@ export async function PATCH(request: Request) {
 
   if (name !== undefined && !name) {
     return NextResponse.json({ error: "name is required" }, { status: 400 })
+  }
+
+  if (phone !== undefined && phone && !isValidPhone(phone)) {
+    return NextResponse.json({ error: "Enter a valid phone number" }, { status: 400 })
   }
 
   const patch: Record<string, string | null> = {}
@@ -81,24 +86,36 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Client not found" }, { status: 404 })
   }
 
-  const { error: deleteError } = await supabase
-    .from("clients")
-    .delete()
-    .eq("id", id)
+  // Soft-delete: mark the row deleted instead of removing it. RLS hides
+  // deleted rows from everyone, so the client disappears from the CRM while
+  // the record (and its projects/documents) is preserved for audit/recovery.
+  // A direct UPDATE is impossible (RLS checks the new row against SELECT
+  // policies, and those require deleted_at is null), so this runs through a
+  // SECURITY DEFINER RPC that enforces the team role itself.
+  const { data: deleted, error: updateError } = await supabase.rpc(
+    "soft_delete_client",
+    { p_client_id: id }
+  )
 
-  if (deleteError) {
-    return NextResponse.json({ error: deleteError.message }, { status: 400 })
+  if (updateError) {
+    return NextResponse.json({ error: updateError.message }, { status: 400 })
   }
 
-  // Also delete the auth user so they can no longer sign in.
-  // auth.admin is a legitimate service-role use (not a data bypass).
+  if (!deleted) {
+    return NextResponse.json({ error: "Client not found" }, { status: 404 })
+  }
+
+  // Permanently revoke portal login. GoTrue's soft-delete (shouldSoftDelete =
+  // true) sets auth.users.deleted_at, which blocks sign-in WITHOUT firing the
+  // clients.user_id ON DELETE CASCADE — so the soft-deleted clients row above
+  // survives. auth.admin is a legitimate service-role use (not a data bypass).
   if (client.user_id && process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const admin = createAdminClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY,
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
-    await admin.auth.admin.deleteUser(client.user_id)
+    await admin.auth.admin.deleteUser(client.user_id, true)
   }
 
   return NextResponse.json({ ok: true })

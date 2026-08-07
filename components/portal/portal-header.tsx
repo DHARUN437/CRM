@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { LayoutGrid, FolderKanban, Files, Receipt, FileQuestion, LogOut, Search, Bell } from "lucide-react"
+import { LayoutGrid, FolderKanban, Files, Receipt, FileQuestion, LogOut, Search, Bell, Settings } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -15,6 +15,7 @@ export const portalLinks = [
   { label: "Requests", href: "/portal/requests", icon: FileQuestion },
   { label: "Documents", href: "/portal/documents", icon: Files },
   { label: "Invoices", href: "/portal/invoices", icon: Receipt },
+  { label: "Settings", href: "/portal/settings", icon: Settings },
 ]
 
 export function isActive(pathname: string, href: string) {
@@ -42,7 +43,7 @@ export function PortalHeader({ clientId, pendingRequestCount }: PortalHeaderProp
     <>
       {/* Desktop Floating Navigation */}
       <header className="hidden sm:flex sticky top-4 z-50 mx-auto w-full max-w-[1700px] px-8 mt-4">
-        <div className="flex h-[64px] w-full items-center justify-between gap-4 rounded-[20px] border border-[#2A2A38] bg-[#17171F]/90 px-6 backdrop-blur-[24px] shadow-layered transition-all">
+        <div className="flex h-[64px] w-full items-center justify-between gap-4 rounded-[20px] border border-[var(--border)] bg-[var(--surface)] px-6 backdrop-blur-[24px] shadow-sm transition-all">
           <div className="flex items-center gap-8">
             <Link href="/portal" className="flex items-center gap-3">
               <Image
@@ -52,8 +53,8 @@ export function PortalHeader({ clientId, pendingRequestCount }: PortalHeaderProp
                 height={36}
                 className="size-9 rounded-xl object-cover shadow-sm"
               />
-              <span className="text-base font-bold tracking-tight text-foreground">
-                JoyCRM <span className="text-muted-foreground font-medium">Enterprise</span>
+              <span className="text-base font-bold tracking-tight text-[var(--text-primary)]">
+                JoyCRM <span className="text-[var(--text-secondary)] font-medium">Enterprise</span>
               </span>
             </Link>
 
@@ -69,12 +70,12 @@ export function PortalHeader({ clientId, pendingRequestCount }: PortalHeaderProp
                     {active && (
                       <motion.div
                         layoutId="active-nav-pill"
-                        className="absolute inset-0 rounded-full bg-primary/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.5)]"
+                        className="absolute inset-0 rounded-full bg-[var(--accent-tint)]"
                         initial={false}
                         transition={{ type: "spring", stiffness: 400, damping: 30 }}
                       />
                     )}
-                    <span className={cn("relative z-10 flex items-center gap-2", active ? "text-primary" : "text-muted-foreground hover:text-foreground")}>
+                    <span className={cn("relative z-10 flex items-center gap-2", active ? "text-[var(--accent)] font-semibold" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]")}>
                       <link.icon className="size-4" />
                       {link.label}
                       {link.href === "/portal/requests" && clientId && (
@@ -91,18 +92,18 @@ export function PortalHeader({ clientId, pendingRequestCount }: PortalHeaderProp
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="icon" className="rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--background)]">
               <Search className="size-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="icon" className="rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--background)]">
               <Bell className="size-5" />
             </Button>
-            <div className="h-6 w-px bg-border mx-1" />
+            <div className="h-6 w-px bg-[var(--border)] mx-1" />
             <Button
               variant="ghost"
               size="sm"
               onClick={signOut}
-              className="rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              className="rounded-full text-[var(--text-secondary)] hover:text-[var(--danger)] hover:bg-[#FEE2E2]"
             >
               <LogOut className="size-4 mr-2" />
               Sign out
@@ -112,7 +113,7 @@ export function PortalHeader({ clientId, pendingRequestCount }: PortalHeaderProp
       </header>
 
       {/* Mobile Compact Header */}
-      <header className="sm:hidden sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b border-[#2A2A38] bg-[#17171F]/90 px-4 backdrop-blur-xl">
+      <header className="sm:hidden sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-4 backdrop-blur-xl">
         <Link href="/portal" className="flex items-center gap-2">
           <Image
             src="/logo.png"
@@ -121,19 +122,19 @@ export function PortalHeader({ clientId, pendingRequestCount }: PortalHeaderProp
             height={32}
             className="size-8 rounded-lg object-cover shadow-sm"
           />
-          <span className="text-sm font-bold tracking-tight text-foreground">JoyCRM</span>
+          <span className="text-sm font-bold tracking-tight text-[var(--text-primary)]">JoyCRM</span>
         </Link>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="text-muted-foreground">
+          <Button variant="ghost" size="icon" className="text-[var(--text-secondary)]">
             <Search className="size-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="relative text-muted-foreground">
+          <Button variant="ghost" size="icon" className="relative text-[var(--text-secondary)]">
             <Bell className="size-5" />
             {pendingRequestCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-primary" />
+              <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-[var(--accent)]" />
             )}
           </Button>
-          <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={signOut}>
+          <Button variant="ghost" size="icon" className="text-[var(--text-secondary)]" onClick={signOut}>
             <LogOut className="size-5" />
           </Button>
         </div>

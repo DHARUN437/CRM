@@ -15,9 +15,16 @@ import { cn } from "@/lib/utils"
 interface CrmBoardProps {
   leads: Lead[]
   onStageChange: (id: string, stage: LeadStage) => void
+  onDelete: (id: string) => void
+  canDeleteLead: (lead: Lead) => boolean
 }
 
-export function CrmBoard({ leads, onStageChange }: CrmBoardProps) {
+export function CrmBoard({
+  leads,
+  onStageChange,
+  onDelete,
+  canDeleteLead,
+}: CrmBoardProps) {
   const [dragId, setDragId] = useState<string | null>(null)
   const [overStage, setOverStage] = useState<LeadStage | null>(null)
 
@@ -85,6 +92,8 @@ export function CrmBoard({ leads, onStageChange }: CrmBoardProps) {
                   lead={lead}
                   dragging={dragId === lead.id}
                   onDragStart={handleDragStart}
+                  onDelete={canDeleteLead(lead) ? onDelete : undefined}
+                  canDelete={canDeleteLead(lead)}
                 />
               ))}
               <NewLeadDialog

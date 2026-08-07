@@ -127,16 +127,16 @@ export function DocumentsView({ documents, allProjects = [] }: DocumentsViewProp
       </div>
 
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-foreground/20 p-12 text-center">
-          <SearchX className="size-8 text-muted-foreground/50" />
-          <p className="text-sm font-medium">No documents found</p>
-          <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col items-center gap-2 rounded-2xl bg-[var(--surface)] border border-dashed border-[var(--border)] p-12 text-center">
+          <SearchX className="size-8 text-[var(--text-muted)]" />
+          <p className="text-sm font-medium text-[var(--text-primary)]">No documents found</p>
+          <p className="text-sm text-[var(--text-secondary)]">
             Documents uploaded by clients through the portal will appear here.
           </p>
         </div>
       ) : (
-        <div className="flex flex-col overflow-hidden rounded-xl border border-foreground/10">
-          <div className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px_160px] gap-4 border-b border-foreground/10 bg-foreground/5 px-4 py-2.5 text-xs font-medium text-muted-foreground md:grid">
+        <div className="flex flex-col overflow-hidden rounded-2xl bg-[var(--surface)] border border-[var(--border)]/60 shadow-sm">
+          <div className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px_160px] gap-4 border-b border-[var(--border)]/60 bg-[var(--background)]/80 px-4 py-3 text-xs font-semibold text-[var(--text-secondary)] md:grid">
             <span>Document</span>
             <span>Client / Company</span>
             <span>Size</span>
@@ -147,12 +147,12 @@ export function DocumentsView({ documents, allProjects = [] }: DocumentsViewProp
             <div
               key={doc.id}
               className={cn(
-                "grid grid-cols-1 items-center gap-3 bg-background px-4 py-3.5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px_160px] md:gap-4",
-                index > 0 && "border-t border-foreground/5"
+                "grid grid-cols-1 items-center gap-3 bg-[var(--surface)] px-4 py-3.5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px_160px] md:gap-4",
+                index > 0 && "border-t border-[var(--border)]/40"
               )}
             >
               <div className="flex min-w-0 items-center gap-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-foreground/5">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-tint)] text-[var(--accent)] font-semibold">
                   <FileIcon type={doc.file_type} className="size-4" />
                 </span>
                 <div className="flex min-w-0 flex-col">

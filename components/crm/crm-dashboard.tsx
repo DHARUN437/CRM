@@ -7,8 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CrmBoard } from "@/components/crm/crm-board"
 import { CrmFunnel } from "@/components/crm/crm-funnel"
 import { currency, type Lead, type LeadStage } from "@/lib/crm"
+import { TrendingUp, Trophy, Target, Percent } from "lucide-react"
 
-export function CrmDashboard({ initialLeads }: { initialLeads: Lead[] }) {
+interface CrmDashboardProps {
+  initialLeads: Lead[]
+  currentUser: { role: string; teamMemberId: string | null }
+}
+
+export function CrmDashboard({ initialLeads, currentUser }: CrmDashboardProps) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads)
 
   useEffect(() => {
@@ -48,6 +54,10 @@ export function CrmDashboard({ initialLeads }: { initialLeads: Lead[] }) {
     }
   }, [])
 
+  const canDeleteLead = (lead: Lead) =>
+    currentUser.role !== "worker" ||
+    (currentUser.teamMemberId != null && lead.ownerId === currentUser.teamMemberId)
+
   async function handleStageChange(id: string, stage: LeadStage) {
     const previous = leads.find((l) => l.id === id)
     if (!previous || previous.stage === stage) return
@@ -73,6 +83,15 @@ export function CrmDashboard({ initialLeads }: { initialLeads: Lead[] }) {
     }
   }
 
+  async function handleDelete(id: string) {
+    const res = await fetch(`/api/leads/${id}`, { method: "DELETE" })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      throw new Error(json.error ?? "Could not delete lead.")
+    }
+    setLeads((prev) => prev.filter((l) => l.id !== id))
+  }
+
   const openValue = leads
     .filter((l) => l.stage !== "won")
     .reduce((sum, l) => sum + l.value, 0)
@@ -89,24 +108,25 @@ export function CrmDashboard({ initialLeads }: { initialLeads: Lead[] }) {
     : 0
 
   const stats = [
-    { label: "Open pipeline", value: currency(openValue) },
-    { label: "Total won", value: currency(wonValue) },
-    { label: "Avg. lead score", value: `${avgScore}` },
-    { label: "Win rate", value: `${winRate}%` },
+    { label: "Open pipeline", value: currency(openValue), icon: TrendingUp },
+    { label: "Total won", value: currency(wonValue), icon: Trophy },
+    { label: "Avg. lead score", value: `${avgScore}`, icon: Target },
+    { label: "Win rate", value: `${winRate}%`, icon: Percent },
   ]
 
   return (
     <>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s) => (
-          <Card key={s.label}>
-            <CardContent className="p-4">
-              <p className="text-xs font-medium text-muted-foreground">
-                {s.label}
-              </p>
-              <p className="mt-1 text-xl font-semibold tracking-tight">
-                {s.value}
-              </p>
+          <Card key={s.label} className="bg-[var(--surface)] border border-[var(--border)]/60 shadow-sm p-4 rounded-2xl">
+            <CardContent className="flex items-center gap-3.5 p-0">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-tint)] text-[var(--accent)] font-semibold shadow-xs">
+                <s.icon className="size-5" />
+              </span>
+              <div className="flex flex-col">
+                <span className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">{s.value}</span>
+                <span className="text-xs text-[var(--text-secondary)] font-medium">{s.label}</span>
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -118,7 +138,12 @@ export function CrmDashboard({ initialLeads }: { initialLeads: Lead[] }) {
           <TabsTrigger value="funnel">Funnel</TabsTrigger>
         </TabsList>
         <TabsContent value="board" className="mt-4">
-          <CrmBoard leads={leads} onStageChange={handleStageChange} />
+          <CrmBoard
+            leads={leads}
+            onStageChange={handleStageChange}
+            onDelete={handleDelete}
+            canDeleteLead={canDeleteLead}
+          />
         </TabsContent>
         <TabsContent value="funnel" className="mt-4">
           <CrmFunnel leads={leads} />

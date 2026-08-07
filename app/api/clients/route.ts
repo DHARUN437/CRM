@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
+import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/supabase/session"
+import { isValidEmail } from "@/lib/validation"
 
 export const dynamic = "force-dynamic"
 
@@ -21,6 +23,32 @@ export async function POST(request: Request) {
       { error: "name, email and password are required" },
       { status: 400 }
     )
+  }
+
+  if (!isValidEmail(email)) {
+    return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 })
+  }
+
+  if (password.length < 6) {
+    return NextResponse.json(
+      { error: "Password must be at least 6 characters" },
+      { status: 400 }
+    )
+  }
+
+  // Duplicate detection — warn, never block. Team RLS lets admins see every
+  // (non-deleted) client, so a case-insensitive exact company match is found
+  // here. The response includes the matched company for the dialog to surface.
+  let duplicateCompany: string | null = null
+  if (company) {
+    const supabase = await createClient()
+    const { data: existing } = await supabase
+      .from("clients")
+      .select("company")
+      .ilike("company", company)
+      .limit(1)
+    const match = existing?.find((c) => c.company?.toLowerCase() === company.toLowerCase())
+    duplicateCompany = match?.company ?? null
   }
 
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -70,5 +98,5 @@ export async function POST(request: Request) {
     .select("id")
     .single()
 
-  return NextResponse.json({ id: data.user.id, name, company, email })
+  return NextResponse.json({ id: data.user.id, name, company, email, duplicateCompany })
 }

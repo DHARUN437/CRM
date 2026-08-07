@@ -60,10 +60,10 @@ export function DeleteClientDialog({
         <DialogHeader>
           <DialogTitle>Delete client</DialogTitle>
           <DialogDescription>
-            Are you sure you want to permanently delete{" "}
-            <span className="font-semibold text-foreground">{clientName}</span>? This
-            will also remove all their projects, documents, and portal access.
-            This action cannot be undone.
+            Are you sure you want to delete{" "}
+            <span className="font-semibold text-foreground">{clientName}</span>? They
+            will disappear from the CRM and permanently lose their portal login.
+            Their records are kept on file and can be restored by an admin.
           </DialogDescription>
         </DialogHeader>
 

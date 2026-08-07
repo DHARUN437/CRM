@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { ClientProfile } from "@/lib/portal-types"
 import { Loader2 } from "lucide-react"
+import { isValidPhone } from "@/lib/validation"
 
 export function EditClientForm({ client }: { client: ClientProfile }) {
   const router = useRouter()
@@ -19,6 +20,10 @@ export function EditClientForm({ client }: { client: ClientProfile }) {
 
   async function handleSave() {
     if (!name.trim()) return
+    if (phone && !isValidPhone(phone)) {
+      setError("Enter a valid phone number")
+      return
+    }
     setLoading(true)
     setError(null)
     setSaved(false)

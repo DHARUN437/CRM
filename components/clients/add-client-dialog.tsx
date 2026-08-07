@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Loader2, UserPlus } from "lucide-react"
+import { AlertTriangle, Loader2, UserPlus } from "lucide-react"
+import { isValidEmail } from "@/lib/validation"
 
 export function AddClientDialog() {
   const router = useRouter()
@@ -25,11 +26,24 @@ export function AddClientDialog() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [duplicateCompany, setDuplicateCompany] = useState<string | null>(null)
+
+  function localErrors(): string | null {
+    if (!isValidEmail(email)) return "Enter a valid email address"
+    if (password.length < 6) return "Password must be at least 6 characters"
+    return null
+  }
 
   async function handleAdd() {
     if (!name.trim() || !email.trim() || !password) return
+    const local = localErrors()
+    if (local) {
+      setError(local)
+      return
+    }
     setLoading(true)
     setError(null)
+    setDuplicateCompany(null)
 
     const res = await fetch("/api/clients", {
       method: "POST",
@@ -54,7 +68,23 @@ export function AddClientDialog() {
     setCompany("")
     setEmail("")
     setPassword("")
+    setDuplicateCompany(null)
     router.refresh()
+  }
+
+  // Warn (never block) when the typed company matches an existing client
+  // exactly (case-insensitive), as the user types.
+  function handleCompanyChange(value: string) {
+    setCompany(value)
+    setDuplicateCompany(null)
+    const trimmed = value.trim()
+    if (!trimmed || trimmed.length < 2) return
+    fetch(`/api/clients/check-duplicate?company=${encodeURIComponent(trimmed)}`)
+      .then((r) => r.json().catch(() => null))
+      .then((json) => {
+        if (json?.duplicateCompany) setDuplicateCompany(json.duplicateCompany)
+      })
+      .catch(() => {})
   }
 
   return (
@@ -92,8 +122,15 @@ export function AddClientDialog() {
               id="c-company"
               placeholder="e.g. Acme Corporation"
               value={company}
-              onChange={(e) => setCompany(e.target.value)}
+              onChange={(e) => handleCompanyChange(e.target.value)}
             />
+            {duplicateCompany && (
+              <p className="flex items-center gap-1.5 rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="size-4 shrink-0" />
+                A client named <span className="font-semibold">{duplicateCompany}</span> already
+                exists. You can still add this client.
+              </p>
+            )}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="c-email">Email</Label>

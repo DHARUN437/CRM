@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import Image from "next/image"
-import { ChevronsUpDown, Command, LogOut } from "lucide-react"
+import { ChevronsUpDown, LogOut, Settings } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -19,15 +19,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { navSectionsFor } from "@/lib/nav"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 
 function WorkspaceSwitcher() {
   return (
-    <div className="group flex w-full items-center gap-3 rounded-2xl border border-[#2A2A38] bg-[#17171F] p-2.5 transition-all hover:bg-[#1E1E28] hover:shadow-layered cursor-default">
-      <div className="relative flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-transparent p-0.5 shadow-sm ring-1 ring-primary/20 group-hover:shadow-[0_0_15px_rgba(79,124,255,0.15)] transition-shadow">
+    <div className="group flex w-full items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-2.5 transition-all hover:bg-[var(--surface)] hover:shadow-sm cursor-default shrink-0">
+      <div className="relative flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent)]/10 to-transparent p-0.5 shadow-sm ring-1 ring-[var(--accent)]/20">
         <Image
           src="/logo.png"
           alt="JoyCRM Logo"
@@ -37,10 +36,10 @@ function WorkspaceSwitcher() {
         />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-bold leading-tight tracking-wide text-foreground/90">JoyCRM</p>
-        <p className="truncate text-[11px] font-bold text-primary/80 uppercase tracking-widest mt-0.5">Enterprise</p>
+        <p className="truncate text-[13px] font-bold leading-tight tracking-wide text-[var(--text-primary)]">JoyCRM</p>
+        <p className="truncate text-[11px] font-bold text-[var(--accent)] uppercase tracking-widest mt-0.5">Enterprise</p>
       </div>
-      <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+      <ChevronsUpDown className="size-4 shrink-0 text-[var(--text-muted)] group-hover:text-[var(--text-secondary)] transition-colors" />
     </div>
   )
 }
@@ -66,41 +65,41 @@ function NavLink({
       aria-disabled={soon}
       onClick={(e) => soon && e.preventDefault()}
       className={cn(
-        "group relative flex items-center gap-4 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all duration-300",
+        "group relative flex items-center gap-4 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all duration-200",
         active
-          ? "text-primary"
-          : "text-muted-foreground hover:text-foreground",
-        soon && "cursor-default opacity-55 hover:text-muted-foreground",
+          ? "text-[var(--accent)]"
+          : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]",
+        soon && "cursor-default opacity-55 hover:text-[var(--text-muted)]",
       )}
     >
       {active && (
         <>
           <motion.div
             layoutId="sidebar-active-bg"
-            className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/10 to-transparent shadow-[inset_0_0_20px_rgba(79,124,255,0.05)]"
+            className="absolute inset-0 rounded-2xl bg-[var(--accent-tint)]"
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           />
           <motion.div
             layoutId="sidebar-active-indicator"
-            className="absolute left-0 top-1/4 bottom-1/4 w-1 rounded-r-full bg-primary shadow-[0_0_12px_rgba(79,124,255,0.8)]"
+            className="absolute left-0 top-1/4 bottom-1/4 w-1 rounded-r-full bg-[var(--accent)]"
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           />
         </>
       )}
       {!active && !soon && (
-        <div className="absolute inset-0 rounded-2xl bg-transparent transition-colors duration-300 group-hover:bg-muted/40" />
+        <div className="absolute inset-0 rounded-2xl bg-transparent transition-colors duration-200 group-hover:bg-[var(--background)]" />
       )}
       
-      <div className={cn("relative flex size-10 shrink-0 items-center justify-center rounded-full transition-all duration-300", active ? "bg-[rgba(99,102,241,0.15)] shadow-[0_4px_12px_rgba(79,124,255,0.15)] ring-1 ring-[#818CF8]/30" : "bg-transparent group-hover:bg-[#1E1E28]/80")}>
-        <Icon className={cn("relative z-10 size-[22px] transition-transform duration-300 group-hover:scale-110", active ? "text-primary dark:text-[#818CF8]" : "text-muted-foreground dark:text-[#9797A8] group-hover:text-foreground/80 dark:group-hover:text-[#F4F4F6]")} />
+      <div className={cn("relative flex size-10 shrink-0 items-center justify-center rounded-full transition-all duration-200", active ? "bg-[var(--accent-tint)]" : "bg-transparent group-hover:bg-[var(--background)]")}>
+        <Icon className={cn("relative z-10 size-[22px] transition-transform duration-200 group-hover:scale-105", active ? "text-[var(--accent)]" : "text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]")} />
       </div>
       
-      <span className="relative z-10 truncate tracking-wide">{label}</span>
+      <span className="relative z-10 truncate tracking-wide capitalize">{label}</span>
       {badge && !soon && (
-        <Badge className="relative z-10 ml-auto h-5 min-w-5 justify-center px-1.5 shadow-sm font-bold">{badge}</Badge>
+        <Badge className="relative z-10 ml-auto h-5 min-w-5 justify-center px-1.5 shadow-sm font-bold bg-[var(--accent)] text-white">{badge}</Badge>
       )}
       {soon && (
-        <span className="ml-auto text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
+        <span className="ml-auto text-[10px] font-medium uppercase tracking-wide text-[var(--text-muted)]">
           Soon
         </span>
       )}
@@ -121,14 +120,14 @@ export function SidebarContent({
   const sections = navSectionsFor(role)
 
   return (
-    <div className="flex h-full flex-col gap-6 bg-[#12121A] border-r border-[#2A2A38] backdrop-blur-[24px] p-6 shadow-[4px_0_24px_rgba(0,0,0,0.4)]">
+    <div className="flex h-full min-h-0 flex-col justify-between gap-4 bg-[var(--surface)] border-r border-[var(--border)] p-5 shadow-sm">
       <WorkspaceSwitcher />
 
-      <ScrollArea className="-mx-1 flex-1 px-1">
-        <nav className="flex flex-col gap-6 pb-4">
+      <div className="-mx-1 flex-1 min-h-0 overflow-y-auto px-1 custom-scrollbar">
+        <nav className="flex flex-col gap-5 py-2">
           {sections.map((section) => (
             <div key={section.title} className="flex flex-col gap-1">
-              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 dark:text-[#9797A8]">
+              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                 {section.title}
               </p>
               {section.items.map((item) => (
@@ -145,7 +144,7 @@ export function SidebarContent({
             </div>
           ))}
         </nav>
-      </ScrollArea>
+      </div>
 
       <ProfileMenu name={userName} email={userEmail} role={role} />
     </div>
@@ -173,39 +172,45 @@ function ProfileMenu({
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className="flex w-full items-center gap-3 rounded-xl border border-border/60 dark:border-[#2A2A38] bg-card/40 dark:bg-[#17171F] px-2.5 py-2 text-left transition-colors hover:bg-card/80 dark:hover:bg-[#1E1E28]">
-        <Avatar className="size-8">
-          <AvatarFallback style={{ background: "oklch(0.62 0.2 274)" }} className="text-xs font-semibold text-white">
-            {displayName
-              .split(" ")
-              .map((part) => part[0])
-              .slice(0, 2)
-              .join("")
-              .toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium leading-tight">{displayName}</p>
-          <p className="truncate text-xs text-muted-foreground">
-            {role === "worker" ? "Worker" : role === "tl" ? "Team Lead" : role === "team" ? "Agency Admin" : "User"}
-          </p>
-        </div>
-        <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>
-            <p className="text-sm font-medium">{displayName}</p>
-            <p className="text-xs font-normal text-muted-foreground">{email}</p>
-          </DropdownMenuLabel>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onClick={signOut}>
-          <LogOut className="size-4" />
-          Sign out
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="shrink-0 pt-2 border-t border-[var(--border)]/40">
+      <DropdownMenu>
+        <DropdownMenuTrigger className="flex w-full items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-2.5 py-2 text-left transition-colors hover:bg-[var(--background)]">
+          <Avatar className="size-8">
+            <AvatarFallback className="text-xs font-semibold text-white bg-[var(--accent)]">
+              {displayName
+                .split(" ")
+                .map((part) => part[0])
+                .slice(0, 2)
+                .join("")
+                .toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium leading-tight text-[var(--text-primary)]">{displayName}</p>
+            <p className="truncate text-xs text-[var(--text-secondary)]">
+              {role === "worker" ? "Worker" : role === "tl" ? "Team Lead" : role === "team" ? "Agency Admin" : "User"}
+            </p>
+          </div>
+          <ChevronsUpDown className="size-4 shrink-0 text-[var(--text-muted)]" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56 bg-[var(--surface)] border border-[var(--border)] text-[var(--text-primary)]">
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>
+              <p className="text-sm font-medium text-[var(--text-primary)]">{displayName}</p>
+              <p className="text-xs font-normal text-[var(--text-secondary)]">{email}</p>
+            </DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => router.push("/settings")} className="cursor-pointer text-xs">
+              <Settings className="size-4 mr-2 text-[var(--accent)]" />
+              Account Settings
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator className="bg-[var(--border)]" />
+          <DropdownMenuItem variant="destructive" onClick={signOut}>
+            <LogOut className="size-4" />
+            Sign out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   )
 }
